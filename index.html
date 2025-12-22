@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的足迹 - 在线版</title>
     <!-- 引入 ECharts -->
@@ -21,6 +22,10 @@
             color: #fff;
             font-family: "Microsoft YaHei", sans-serif;
             overflow: hidden;
+            /* 核心修复：锁死页面，禁止任何默认的页面级滚动 */
+            position: fixed;
+            /* 禁止移动端浏览器的默认手势（如侧滑返回等，防止干扰地图） */
+            touch-action: none;
         }
 
         .stars {
@@ -34,20 +39,9 @@
             /* 使用更清晰的单个圆点定义，调整了坐标分布 */
             background-image:
             /* 第一组：稍大的亮星 */
-            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
+            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
             /* 第二组：微弱的小星 (增加层次感) */
-            radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent), 
-                radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
+            radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
             background-repeat: repeat;
             background-size: 600px 600px; /* 保持大尺寸循环，避免密集重复 */
             animation: moveStars 150s linear infinite; /* 极慢速移动，更唯美 */
@@ -202,7 +196,7 @@
             }
 
         .sidebar {
-            position: absolute;
+            position: fixed;
             top: 0;
             right: 0;
             bottom: 0;
@@ -601,12 +595,7 @@
             width: 100%;
             height: 100%;
             z-index: 0;
-            background: radial-gradient(circle at 10% 20%, 
-            rgba(0, 223, 255, 0.08), 
-            transparent 40%), 
-                radial-gradient(circle at 90% 80%, 
-            rgba(80, 50, 250, 0.08), 
-            transparent 40%);
+            background: radial-gradient(circle at 10% 20%, rgba(0, 223, 255, 0.08), transparent 40%), radial-gradient(circle at 90% 80%, rgba(80, 50, 250, 0.08), transparent 40%);
             filter: blur(50px);
             pointer-events: none;
         }
@@ -828,9 +817,169 @@
             color: #ffaa00;
         }
         /* 橙色-越野跑 */
+        /* --- 移动端适配 (Responsive Design) --- */
+        @media screen and (max-width: 768px) {
+            /* 1. 调整标题和左侧面板 */
+            .left-panel {
+                top: 15px;
+                left: 15px;
+                max-width: 60%; /* 防止遮挡右侧按钮 */
+            }
 
+            .main-title h1 {
+                font-size: 20px; /* 字体变小 */
+                text-shadow: 0 0 10px rgba(0, 223, 255, 0.5);
+            }
+
+            .btn-group-left {
+                margin-top: 10px;
+                gap: 5px;
+            }
+
+            .nav-btn, .tag-manage-btn {
+                padding: 4px 10px;
+                font-size: 11px; /* 按钮变小 */
+            }
+
+            /* 2. 调整右上角统计面板 */
+            .stats-panel {
+                top: 70px; /* 移到汉堡菜单下方 */
+                right: 15px;
+                flex-direction: column; /* 竖排显示 */
+                gap: 5px;
+            }
+
+            .stat-card {
+                padding: 5px 10px;
+                background: rgba(16, 30, 50, 0.8);
+            }
+
+            .stat-num {
+                font-size: 16px;
+            }
+
+            .stat-desc {
+                font-size: 10px;
+            }
+
+            /* 3. 调整侧边栏 (全屏显示) */
+            .sidebar {
+                width: 100%; /* 占满屏幕宽度 */
+                position: fixed !important;
+                background: rgba(10, 16, 26, 0.98); /* 不透明度提高，防止背景干扰 */
+                right: 0;
+                left: auto;
+            }
+
+            .sidebar-btn {
+                top: 15px;
+                right: 15px;
+                width: 36px;
+                height: 36px; /* 稍微缩小 */
+            }
+
+            .sidebar-edit-toggle {
+                top: 60px;
+                right: 15px; /* 调整位置 */
+            }
+
+            .region-record-btn {
+                top: 110px;
+                right: 15px;
+            }
+
+            /* 4. 调整弹窗 (适配小屏幕) */
+            .modal {
+                width: 85%; /* 宽度占85% */
+                margin: 0 auto; /* 居中 */
+                padding: 20px;
+                max-height: 80vh; /* 防止超出一屏 */
+                overflow-y: auto; /* 内容过多可滚动 */
+            }
+            /* 让输入框在手机上更好点 */
+            .form-item input, .form-item textarea {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            /* 5. 调整图例 (移到最底部或隐藏) */
+            .legend-box {
+                bottom: 20px;
+                left: 10px;
+                padding: 8px;
+                transform: scale(0.8); /* 整体缩小 */
+                transform-origin: bottom left;
+            }
+
+            /* 隐藏不必要的悬浮提示，手机上没有 hover */
+            .version-tooltip {
+                display: none !important;
+            }
+            /* 1. 调整弹窗容器大小与位置 */
+            .modal {
+                width: 85% !important; /* 强制宽度为屏幕的 85% */
+                min-width: 300px; /* 最小宽度 */
+                max-width: 100%; /* 防止溢出 */
+                margin: 0 auto !important; /* 居中 */
+                max-height: 80vh; /* 最大高度为屏幕高度的 80%，防止被键盘顶出 */
+                overflow-y: auto; /* 内容超长时允许内部滚动 */
+                padding: 15px !important; /* 减小内边距，留更多空间给内容 */
+                /* 针对 iOS Safari 的优化，防止滚动穿透卡顿 */
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 2. 调整遮罩层对齐方式 */
+            .modal-mask {
+                /* 确保弹窗垂直居中，或者稍微靠上 */
+                align-items: center !important;
+                padding-bottom: 20px;
+            }
+
+            /* 3. 调整输入框和字体 */
+            .form-item label {
+                font-size: 14px; /* 稍微放大标签文字 */
+            }
+
+            .form-item input, .form-item textarea {
+                font-size: 16px !important; /* 关键：iOS上字体小于16px输入时会自动放大页面，导致布局错乱 */
+                padding: 10px;
+            }
+
+            /* 4. 调整一行两个输入框的布局 (日期/天数) */
+            .form-item[style*="display:flex"] {
+                gap: 8px !important; /* 减小间距 */
+            }
+            /* 强制天数输入框不要太宽也不要太窄 */
+            .form-item input[type="number"] {
+                width: 100%;
+            }
+
+            /* 5. 调整动态数据输入框 (公里数/爬升) */
+            .dynamic-data-row {
+                padding: 8px;
+                gap: 5px;
+            }
+
+            .dynamic-input-group label {
+                font-size: 11px; /* 标签字改小，防止换行 */
+            }
+
+            /* 6. 底部按钮区域 */
+            .modal-btns {
+                margin-top: 15px;
+                display: flex;
+                justify-content: flex-end; /* 按钮靠右 */
+                gap: 10px;
+            }
+
+            .btn-ok, .btn-cancel, .btn-del {
+                padding: 8px 15px !important; /* 增大按钮点击区域，方便手指点击 */
+                font-size: 14px !important;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <div class="stars"></div>
@@ -876,10 +1025,14 @@
 
             <!-- 新增：数据备份区 (修复了位置和点击问题) -->
             <div style="margin-top: 15px; border-top: 1px dashed rgba(0, 223, 255, 0.3); padding-top: 10px; width: 100%; pointer-events: auto;">
-                <button class="nav-btn" style="display:inline-block; 
-                        font-size:12px; padding:6px 15px; margin-right:5px; border-color:#aaa; color:#ccc;" onclick="exportData()" title="下载数据到本地">⬇ 备份</button>
-                <button class="nav-btn" style="display:inline-block; 
-                        font-size:12px; padding:6px 15px; border-color:#aaa; color:#ccc;" onclick="document.getElementById('file-input').click()" title="从本地文件恢复">⬆ 恢复</button>
+                <button class="nav-btn" style="display:inline-block;
+                        font-size:12px; padding:6px 15px; margin-right:5px; border-color:#aaa; color:#ccc;" onclick="exportData()" title="下载数据到本地">
+                    ⬇ 备份
+                </button>
+                <button class="nav-btn" style="display:inline-block;
+                        font-size:12px; padding:6px 15px; border-color:#aaa; color:#ccc;" onclick="document.getElementById('file-input').click()" title="从本地文件恢复">
+                    ⬆ 恢复
+                </button>
                 <input type="file" id="file-input" style="display: none;" onchange="importData(this)">
             </div>
         </div>
@@ -1605,24 +1758,24 @@
 
                 if (stats.hike.count > 0) {
                     statsContent += `
-                                <div class="summary-row sum-hike">
-                                    <span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span>
-                                    <span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span>
-                                </div>`;
+                                    <div class="summary-row sum-hike">
+                                        <span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span>
+                                        <span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span>
+                                    </div>`;
                 }
                 if (stats.run.count > 0) {
                     statsContent += `
-                                <div class="summary-row sum-run">
-                                    <span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span>
-                                    <span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span>
-                                </div>`;
+                                    <div class="summary-row sum-run">
+                                        <span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span>
+                                        <span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span>
+                                    </div>`;
                 }
                 if (stats.dive.count > 0) {
                     statsContent += `
-                                <div class="summary-row sum-dive">
-                                    <span class="sum-title">🤿 潜水</span>
-                                    <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
-                                </div>`;
+                                    <div class="summary-row sum-dive">
+                                        <span class="sum-title">🤿 潜水</span>
+                                        <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
+                                    </div>`;
                 }
 
                 // 只有当有运动数据时，才包裹外框
@@ -1729,32 +1882,32 @@
                     let noteHtml = '';
                     if (r.note && r.note.trim() !== '') {
                         noteHtml = `
-                                    <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
-                                        ${r.note}
-                                    </div>
-                                `;
+                                        <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
+                                            ${r.note}
+                                        </div>
+                                    `;
                     }
 
                     div.innerHTML = `
-                                ${bgDiv}
-                                <div class="rec-content">
-                                    <div class="rec-top">
-                                        <div style="display:flex; align-items:center;">
-                                            ${flagImg} <span>${place}</span>
-                                        </div><span class="rec-days">${r.days || 1}天</span>
-                                        <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
-                                    </div>
-                                     <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                                        <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
-                                        <div class="rec-tags">${tagsHtml}</div>
-                                    </div>
+                                    ${bgDiv}
+                                    <div class="rec-content">
+                                        <div class="rec-top">
+                                            <div style="display:flex; align-items:center;">
+                                                ${flagImg} <span>${place}</span>
+                                            </div><span class="rec-days">${r.days || 1}天</span>
+                                            <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+                                        </div>
+                                         <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                                            <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                                            <div class="rec-tags">${tagsHtml}</div>
+                                        </div>
 
-                                    ${statsHtml}
-                                    ${noteHtml}
+                                        ${statsHtml}
+                                        ${noteHtml}
 
-                                    </div>
+                                        </div>
 
-                            `;
+                                `;
                     list.appendChild(div);
                 });
 
@@ -2097,7 +2250,16 @@
                 setTimeout(() => document.getElementById('login-mask').style.display = 'flex', 500);
             }
         });
-
+        // --- 移动端键盘适配 ---
+        // 防止手机软键盘弹出时，窗口高度变化导致地图变形
+        const originalHeight = window.innerHeight;
+        window.addEventListener('resize', () => {
+            // 只有当高度变化超过 150px (通常是键盘弹出) 时才不重绘地图
+            // 或者简单地保持 myChart.resize() 也可以，ECharts 适配性通常不错
+            if (Math.abs(window.innerHeight - originalHeight) < 100) {
+                myChart.resize();
+            }
+        });
     </script>
 </body>
 </html>
