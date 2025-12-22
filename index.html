@@ -3,164 +3,910 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的足迹 - 云端同步版</title>
+    <title>我的足迹 - 在线版</title>
     <!-- 引入 ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- 引入 jQuery -->
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <!-- 引入 Supabase SDK (核心) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
-        /* --- 1. 背景与全局 --- */
+        /* --- 1. 全局与背景 --- */
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #050a14;
-            font-family: "Microsoft YaHei", sans-serif; overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, #1b2735 0%, #090a0f 100%);
             color: #fff;
+            font-family: "Microsoft YaHei", sans-serif;
+            overflow: hidden;
         }
-        .ambient-light {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background: radial-gradient(circle at 10% 20%, rgba(0, 223, 255, 0.08), transparent 40%),
-                        radial-gradient(circle at 90% 80%, rgba(80, 50, 250, 0.08), transparent 40%);
-            filter: blur(50px); pointer-events: none;
-        }
-        .grid-texture {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 60px 60px; pointer-events: none;
-        }
+
         .stars {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
             background: transparent;
-            background-image: radial-gradient(2px 2px at 50px 100px, #ffffff, transparent),
-                              radial-gradient(2px 2px at 350px 50px, #ffffff, transparent),
-                              radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent);
-            background-repeat: repeat; background-size: 600px 600px;
-            animation: moveStars 150s linear infinite; opacity: 0.9; pointer-events: none;
+            /* 使用更清晰的单个圆点定义，调整了坐标分布 */
+            background-image:
+            /* 第一组：稍大的亮星 */
+            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
+            /* 第二组：微弱的小星 (增加层次感) */
+            radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
+            background-repeat: repeat;
+            background-size: 600px 600px; /* 保持大尺寸循环，避免密集重复 */
+            animation: moveStars 150s linear infinite; /* 极慢速移动，更唯美 */
+            opacity: 0.9;
+            pointer-events: none;
         }
-        @keyframes moveStars { from {transform: translateY(0);} to {transform: translateY(-1000px);} }
-        #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* --- 2. UI 面板 --- */
-        .left-panel { position: absolute; top: 30px; left: 30px; z-index: 10; pointer-events: auto; } /* 确保 auto */
+        @keyframes moveStars {
+            from {
+                transform: translateY(0);
+            }
+
+            to {
+                transform: translateY(-1000px);
+            }
+        }
+
+        #map-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- 2. 左侧面板 & 标签按钮 --- */
+        .left-panel {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
         .main-title h1 {
-            margin: 0; font-size: 34px; letter-spacing: 2px;
-            background: linear-gradient(135deg, #fff 0%, #00dfff 100%);
-            -webkit-background-clip: text; color: transparent;
-            text-shadow: 0 0 30px rgba(0, 223, 255, 0.4);
-        }
-        
-        .btn-group-left { margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-        .nav-btn, .tag-manage-btn {
-            background: rgba(16, 30, 50, 0.6); backdrop-filter: blur(5px);
-            border: 1px solid rgba(0, 223, 255, 0.3); color: #fff;
-            padding: 6px 18px; border-radius: 6px; cursor: pointer; font-size: 13px;
-            transition: 0.3s; display: flex; align-items: center; gap: 5px;
-        }
-        .nav-btn:hover, .tag-manage-btn:hover {
-            background: rgba(0, 223, 255, 0.2); border-color: #00dfff; box-shadow: 0 0 15px rgba(0, 223, 255, 0.3);
+            margin: 0;
+            font-size: 32px;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #fff, #00dfff);
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(0, 223, 255, 0.3);
         }
 
-        /* --- 3. 弹窗通用 (关键修复：默认隐藏) --- */
-        .modal-mask { 
-            display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); z-index: 2000; backdrop-filter: blur(5px); 
-            justify-content: center; align-items: center; /* 居中 */
+        .btn-group-left {
+            margin-top: 20px;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
-        .modal {
-            background: rgba(20, 30, 45, 0.95); padding: 25px; width: 380px;
-            border: 1px solid rgba(0, 223, 255, 0.3); border-radius: 12px; 
-            box-shadow: 0 0 40px rgba(0, 223, 255, 0.2); color: #fff;
+
+        .nav-btn {
+            background: rgba(0, 0, 0, 0.4);
+            color: #00dfff;
+            border: 1px solid #00dfff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            display: none;
         }
-        .form-item { margin-bottom: 15px; }
-        .form-item input, .form-item textarea {
-            width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #345;
-            color: #fff; border-radius: 4px; box-sizing: border-box; outline: none;
+
+            .nav-btn:hover {
+                background: #00dfff;
+                color: #000;
+                box-shadow: 0 0 20px #00dfff;
+            }
+
+        /* 新增：管理标签按钮 */
+        .tag-manage-btn {
+            background: rgba(255, 215, 0, 0.1);
+            color: #FFD700;
+            border: 1px solid #FFD700;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            display: block;
         }
-        .modal-btns { text-align: right; margin-top: 20px; }
-        .btn-ok { background: #00dfff; color: #000; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-cancel { background: transparent; border: 1px solid #666; color: #ccc; padding: 6px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+
+            .tag-manage-btn:hover {
+                background: #FFD700;
+                color: #000;
+                box-shadow: 0 0 15px #FFD700;
+            }
+
+        /* --- 3. 右上统计 --- */
+        .stats-panel {
+            position: absolute;
+            top: 30px;
+            right: 80px;
+            z-index: 10;
+            display: flex;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .stat-card {
+            background: rgba(20, 30, 50, 0.7);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-num {
+            font-size: 24px;
+            color: #FFD700;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-desc {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        /* --- 4. 侧边栏 --- */
+        .sidebar-btn {
+            position: absolute;
+            top: 30px;
+            right: 20px;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,223,255,0.1);
+            border: 1px solid #00dfff;
+            border-radius: 50%;
+            color: #00dfff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.3s;
+        }
+
+            .sidebar-btn:hover {
+                background: #00dfff;
+                color: #000;
+                box-shadow: 0 0 15px #00dfff;
+            }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 340px;
+            background: rgba(10, 15, 25, 0.95);
+            border-left: 1px solid #334;
+            transform: translateX(100%);
+            transition: transform 0.4s ease;
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            padding-top: 80px;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.8);
+        }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 20px;
+        }
+
+        .year-header {
+            color: #FFD700;
+            font-weight: bold;
+            padding: 12px;
+            margin-top: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
 
         /* --- 4. 登录弹窗特有 --- */
-        #login-mask { display: flex; z-index: 3000; } /* 初始显示登录框 */
+        #login-mask {
+            display: flex;
+            z-index: 3000;
+        }
+        /* 初始显示登录框 */
 
-        /* --- 其他组件样式 --- */
-        .stats-panel { position: absolute; top: 30px; right: 80px; z-index: 10; display: flex; gap: 15px; pointer-events: none; }
-        .stat-card { background: rgba(16, 30, 50, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 20px; border-radius: 8px; text-align: center; }
-        .stat-num { font-size: 24px; color: #FFD700; font-weight: bold; display: block; }
-        .stat-desc { font-size: 12px; color: #88aadd; }
+        /* --- 新增：编辑按钮样式 --- */
+        .btn-edit-rec {
+            cursor: pointer;
+            color: #00dfff;
+            margin-right: 8px;
+            font-size: 14px;
+            transition: 0.2s;
+        }
 
-        .sidebar-btn { position: absolute; top: 30px; right: 20px; z-index: 100; width: 40px; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid #fff; border-radius: 8px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; background: rgba(10, 16, 26, 0.95); transform: translateX(100%); transition: 0.4s; z-index: 90; display: flex; flex-direction: column; padding-top: 80px; border-left: 1px solid #334; }
-        .sidebar.open { transform: translateX(0); }
-        .sidebar-content { flex: 1; overflow-y: auto; padding: 10px 20px; }
-        
-        .year-header { color: #fff; font-weight: bold; padding: 12px 5px; margin-top: 15px; border-bottom: 1px solid #334; cursor: pointer; display: flex; justify-content: space-between; }
-        .record-list.hidden { display: none; }
-        .record-item { background: rgba(255, 255, 255, 0.03); border: 1px solid #334; border-radius: 10px; padding: 12px 15px; margin-bottom: 12px; position: relative; overflow: hidden; border-left: 3px solid rgba(255,255,255,0.2); }
-        .rec-bg-img { position: absolute; top: 0; right: 0; width: 70%; height: 100%; background-size: cover; opacity: 0.6; filter: grayscale(30%); mask-image: linear-gradient(to right, transparent 0%, black 90%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 90%); z-index: 0; }
-        .rec-content { position: relative; z-index: 1; }
-        .rec-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .rec-place { font-weight: bold; color: #fff; }
-        .rec-date { font-size: 12px; color: #aaa; }
-        .rec-days { position: absolute; top: 10px; right: 10px; font-size: 18px; color: #FFD700; font-weight: bold; z-index: 2; }
-        .rec-tag-badge { font-size: 10px; color: #00dfff; border: 1px solid rgba(0,223,255,0.4); padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.5); margin-right: 4px; }
-        
-        .tag-selector-container { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; }
-        .tag-option { padding: 4px 10px; border: 1px solid #445; border-radius: 15px; font-size: 12px; cursor: pointer; color: #aaa; }
-        .tag-option.selected { background: rgba(0, 223, 255, 0.2); border-color: #00dfff; color: #fff; }
-        
-        .dynamic-data-row { display: none; gap: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; }
-        .dynamic-data-row.active { display: flex; }
-        .dynamic-input-group { flex: 1; }
-        .dynamic-input-group input { text-align: center; color: #000 !important; background: #fff !important; font-weight: bold; }
-        
-        .manage-tag-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px dashed #334; font-size: 13px; }
+            .btn-edit-rec:hover {
+                color: #fff;
+                text-shadow: 0 0 5px #00dfff;
+            }
+        /* --- 1. 修改原有的编辑图标样式：默认隐藏 --- */
+        .btn-edit-rec {
+            display: none; /* 核心修改：默认不显示 */
+            cursor: pointer;
+            color: #00dfff;
+            margin-right: 8px;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        /* --- 2. 当侧边栏处于编辑模式时，显示图标 --- */
+        .sidebar.edit-mode .btn-edit-rec {
+            display: inline-block; /* 激活时显示 */
+            animation: fadeIn 0.3s;
+        }
+
+        /* --- 3. 新增：全局编辑开关按钮样式 --- */
+        .sidebar-edit-toggle {
+            position: absolute;
+            top: 80px; /* 位于侧边栏开关(30px)的下方 */
+            right: 20px;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,223,255,0.1);
+            border: 1px solid #00dfff;
+            border-radius: 50%;
+            color: #00dfff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.3s;
+        }
+
+            /* 悬停或激活状态 */
+            .sidebar-edit-toggle:hover, .sidebar-edit-toggle.active {
+                background: #00dfff;
+                color: #000;
+                box-shadow: 0 0 15px #00dfff;
+            }
+        /* 年份右侧统计信息 */
+        .year-stats {
+            font-size: 11px;
+            color: #aaa;
+            font-weight: normal;
+        }
+
+        .record-list.hidden {
+            display: none;
+        }
+
+        .record-item b {
+            color: #fff;
+            font-size: 14px;
+        }
+
+        /* 侧边栏标签与天数 */
+        .rec-tags {
+            margin-top: 5px;
+        }
+
+        .rec-tag-badge {
+            display: inline-block;
+            padding: 1px 5px;
+            background: rgba(0, 223, 255, 0.15);
+            color: #00dfff;
+            border: 1px solid rgba(0, 223, 255, 0.3);
+            border-radius: 3px;
+            font-size: 10px;
+            margin-right: 4px;
+        }
+
+        .rec-days {
+            float: right;
+            color: #FFD700;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* --- 新增：国旗图标样式 --- */
+        .flag-icon {
+            width: 20px;
+            height: 15px;
+            object-fit: cover;
+            margin-right: 6px;
+            border-radius: 2px;
+            vertical-align: -2px; /* 微调垂直对齐 */
+            box-shadow: 0 0 2px rgba(255,255,255,0.3);
+        }
+        /* --- 新增：版本号及悬浮框样式 --- */
+        .version-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 5px;
+            pointer-events: auto; /* <--- 必须添加这一行，否则鼠标无法感应 */
+        }
+
+        .version-badge {
+            padding: 2px 8px;
+            background: rgba(0, 223, 255, 0.15);
+            border: 1px solid #00dfff;
+            border-radius: 4px;
+            color: #00dfff;
+            font-size: 11px;
+            cursor: help; /* 鼠标放上去显示问号/帮助手势 */
+            transition: 0.3s;
+        }
+
+            .version-badge:hover {
+                background: rgba(0, 223, 255, 0.4);
+                box-shadow: 0 0 10px rgba(0, 223, 255, 0.5);
+            }
+
+        /* 悬浮显示的详情框 */
+        .version-tooltip {
+            display: none; /* 默认隐藏 */
+            position: absolute;
+            top: 100%; /* 显示在下方 */
+            left: 0;
+            width: 220px;
+            background: rgba(16, 30, 50, 0.95);
+            border: 1px solid #00dfff;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            margin-top: 8px;
+            backdrop-filter: blur(5px);
+            color: #ccc;
+            font-size: 12px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+            .version-tooltip h4 {
+                margin: 0 0 8px 0;
+                color: #FFD700;
+                font-size: 13px;
+                border-bottom: 1px dashed #445;
+                padding-bottom: 5px;
+            }
+
+        /* 核心交互：鼠标悬停在容器上时，显示详情框 */
+        .version-container:hover .version-tooltip {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        /* --- 5. 左下角图例 --- */
+        .legend-box {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            z-index: 10;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #445;
+            pointer-events: none;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #ddd;
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        /* --- 6. 弹窗样式 --- */
+        .modal-mask {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background: #112233;
+            margin: 8% auto;
+            padding: 25px;
+            width: 400px;
+            border: 1px solid #00dfff;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 223, 255, 0.3);
+            color: #fff;
+        }
+
+        .form-item {
+            margin-bottom: 15px;
+        }
+
+            .form-item label {
+                display: block;
+                color: #8ab;
+                font-size: 12px;
+                margin-bottom: 5px;
+            }
+
+            .form-item input, .form-item textarea {
+                width: 100%;
+                padding: 8px;
+                background: rgba(0,0,0,0.3);
+                border: 1px solid #345;
+                color: #fff;
+                border-radius: 4px;
+                box-sizing: border-box;
+                outline: none;
+            }
+
+        .modal-btns {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .btn-ok {
+            background: #00dfff;
+            color: #000;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid #666;
+            color: #ccc;
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        /* --- 新增：删除按钮样式 --- */
+        .btn-del {
+            background: transparent;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: auto; /* 让删除按钮靠左显示 */
+            float: left; /* 强制靠左 */
+            display: none; /* 默认隐藏，只有编辑时显示 */
+        }
+
+            .btn-del:hover {
+                background: #ff4444;
+                color: #fff;
+            }
+        /* --- 7. 标签选择器样式 --- */
+        .tag-selector-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 5px 0;
+        }
+
+        .tag-option {
+            padding: 4px 10px;
+            border: 1px solid #445;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #aaa;
+            transition: 0.2s;
+        }
+
+            .tag-option.selected {
+                background: rgba(0, 223, 255, 0.2);
+                border-color: #00dfff;
+                color: #fff;
+                box-shadow: 0 0 5px rgba(0, 223, 255, 0.3);
+            }
+
+        /* --- 8. 标签管理弹窗样式 --- */
+        .tag-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tag-list-manage {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #334;
+            padding: 10px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .manage-tag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px dashed #334;
+            font-size: 13px;
+        }
+
+        .btn-del-tag {
+            color: #ff4444;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 5px;
+        }
+
+            .btn-del-tag:hover {
+                text-decoration: underline;
+            }
+
+        /* --- 1. 背景升级：极光 + 网格 --- */
+        body {
+            background-color: #050a14 !important; /* 深邃蓝黑 */
+        }
+
+        .ambient-light {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(circle at 10% 20%, 
+            rgba(0, 223, 255, 0.08), 
+            transparent 40%), 
+                radial-gradient(circle at 90% 80%, 
+            rgba(80, 50, 250, 0.08), 
+            transparent 40%);
+            filter: blur(50px);
+            pointer-events: none;
+        }
+
+        .grid-texture {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+        /* 确保原有的星星在网格之上 */
+        .stars {
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        /* --- 2. 旅行日志卡片升级 --- */
+        .record-item {
+            position: relative;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            overflow: hidden; /* 裁剪背景图 */
+            transition: all 0.3s ease;
+            /* 默认左边框 */
+            border-left: 3px solid rgba(255,255,255,0.2);
+        }
+
+            /* 悬浮交互：上浮 + 发光 */
+            .record-item:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
+        /* 动态背景图容器 */
+        .rec-bg-img {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 70%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.6;
+            filter: grayscale(50%); /* 默认微灰，不抢眼 */
+            /* 核心效果：从左(透明)到右(显示)的渐变遮罩 */
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 99%);
+            mask-image: linear-gradient(to right, transparent 0%, black 99%);
+            z-index: 0;
+            transition: 0.5s;
+        }
+
+        .record-item:hover .rec-bg-img {
+            opacity: 0.9;
+            filter: grayscale(0%);
+            transform: scale(1.05); /* 悬浮时变亮、变色 */
+        }
+
+        /* --- 新增特效样式 --- */
+
+        /* 1. 星星呼吸闪烁 */
+        .blinking-stars {
+            animation: moveStars 150s linear infinite, blink 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        /* 2. 鼠标跟随光晕 */
+        #cursor-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 223, 255, 0.08) 0%, transparent 60%);
+            border-radius: 50%;
+            pointer-events: none; /* 必须穿透，否则无法点击地图 */
+            z-index: 0;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+            mix-blend-mode: screen; /* 混合模式，让光效更自然 */
+        }
+
+        /* 内容层级调整 */
+        .rec-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        /* 内部布局微调 */
+        .rec-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+        }
+
+        .rec-place {
+            font-size: 15px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .rec-date {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        /* 标签样式 (保持原有逻辑，增加阴影以适应背景图) */
+        .rec-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .rec-tag-badge {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(2px);
+        }
+
+        /* --- 新增：动态数据输入框样式 --- */
+        .dynamic-data-row {
+            display: none; /* 默认隐藏 */
+            gap: 10px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+            .dynamic-data-row.active {
+                display: flex; /* 激活时显示 flex 布局 */
+                animation: fadeIn 0.3s;
+            }
+
+        .dynamic-input-group {
+            flex: 1;
+        }
+
+            .dynamic-input-group label {
+                color: #00dfff;
+                font-size: 12px;
+                margin-bottom: 4px;
+                display: block;
+            }
+
+            .dynamic-input-group input {
+                text-align: center;
+                color: #000000 !important;
+                font-weight: bold;
+            }
+        /* --- 新增：年度运动统计面板样式 --- */
+        .year-summary-box {
+            display: none; /* 默认隐藏，随年份展开 */
+            background: rgba(0, 0, 0, 0.4);
+            margin: 0 10px 10px 10px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+            .summary-row:last-child {
+                border-bottom: none;
+            }
+
+        .sum-title {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sum-data {
+            font-family: 'Consolas', monospace;
+            color: #fff;
+        }
+
+        /* 颜色定义 */
+        .sum-hike {
+            color: #50c878;
+        }
+        /* 绿色-徒步 */
+        .sum-dive {
+            color: #00dfff;
+        }
+        /* 蓝青-潜水 */
+        .sum-run {
+            color: #ffaa00;
+        }
+        /* 橙色-越野跑 */
+
     </style>
 </head>
 <body>
 
+    <div class="stars"></div>
     <div class="ambient-light"></div>
     <div class="grid-texture"></div>
-    <div class="stars"></div>
+    <div class="stars blinking-stars"></div>
 
+    <!-- 新增：鼠标跟随光晕 -->
+    <div id="cursor-glow"></div>
     <div class="left-panel">
         <div class="main-title">
             <h1>我的足迹地图</h1>
-            <div style="font-size:11px; color:#00dfff; margin-top:5px; border:1px solid #00dfff; display:inline-block; padding:2px 8px; border-radius:4px;">V4.0 Cloud</div>
-        </div>
-        
-        <!-- 用户状态 -->
-        <div id="user-status" style="margin-top:15px; margin-bottom:10px; font-size:12px; color:#00dfff; display:none;">
-            👤 <span id="user-email"></span> 
-            <a href="#" onclick="handleLogout()" style="color:#888; margin-left:5px;">[退出]</a>
+            <div class="version-container">
+                <div class="version-badge">V3.7</div>
+
+                <!-- 版本号设置 -->
+                <!-- 这里是悬浮显示的详细信息，直接在这里修改文字即可 -->
+                <div class="version-tooltip">
+                    <h4>版本更新日志</h4>
+                    <p>发布时间: 2025-12-22</p>
+                    <ul style="margin:0; padding-left:15px;">
+                        <li>V3.7：新增在线登录功能</li>
+                        <li>V3.6：新增部分运动记录功能，界面优化</li>
+                        <li>V3.5：新增备份功能</li>
+                        <li>V3.4：新增删除记录功能，新增base地设置</li>
+                        <li>V3.3：新增十三个国家地图</li>
+                        <li>V3.2：新增软件版本变更日志，新增记录修改功能</li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
 
+        <!-- 用户状态 -->
+        <div id="user-status" style="margin-top:15px; margin-bottom:10px; font-size:12px; color:#00dfff; display:none;">
+            👤 <span id="user-email"></span>
+            <a href="#" onclick="handleLogout()" style="color:#888; margin-left:5px;">[退出]</a>
+        </div>
         <div class="btn-group-left">
-            <button id="nav-back-btn" class="nav-btn" style="display:none;">← 返回</button>
-            <div style="display:flex; gap:10px;">
-                <button class="tag-manage-btn" onclick="openTagManager()">🏷️ 标签管理</button>
-                <button class="tag-manage-btn" style="border-color:#FF8C00; color:#FF8C00;" onclick="openBaseManager()">🏠 Base地</button>
-            </div>
-            
-            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); width: 100%;">
-                <button class="nav-btn" style="display:inline-block; font-size:12px; padding:5px 12px; opacity:0.8;" onclick="exportData()">⬇ 备份</button>
-                <button class="nav-btn" style="display:inline-block; font-size:12px; padding:5px 12px; opacity:0.8;" onclick="document.getElementById('file-input').click()">⬆ 恢复</button>
+            <button id="nav-back-btn" class="nav-btn">← 返回</button>
+            <button class="tag-manage-btn" onclick="openTagManager()">🏷️ 管理标签</button>
+            <button class="tag-manage-btn" style="border-color: #FF8C00; color: #FF8C00;" onclick="openBaseManager()">🏠 管理Base地</button>
+
+            <!-- 新增：数据备份区 (修复了位置和点击问题) -->
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(0, 223, 255, 0.3); padding-top: 10px; width: 100%; pointer-events: auto;">
+                <button class="nav-btn" style="display:inline-block; 
+                        font-size:12px; padding:6px 15px; margin-right:5px; border-color:#aaa; color:#ccc;" onclick="exportData()" title="下载数据到本地">⬇ 备份</button>
+                <button class="nav-btn" style="display:inline-block; 
+                        font-size:12px; padding:6px 15px; border-color:#aaa; color:#ccc;" onclick="document.getElementById('file-input').click()" title="从本地文件恢复">⬆ 恢复</button>
                 <input type="file" id="file-input" style="display: none;" onchange="importData(this)">
             </div>
         </div>
     </div>
 
     <div class="stats-panel">
-        <div class="stat-card"><span class="stat-num" id="count-country">0</span><span class="stat-desc">国家/地区</span></div>
-        <div class="stat-card"><span class="stat-num" id="count-total">0</span><span class="stat-desc">足迹总数</span></div>
+        <div class="stat-card">
+            <span class="stat-num" id="count-country">0</span>
+            <span class="stat-desc">国家/地区</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-num" id="count-total">0</span>
+            <span class="stat-desc">足迹总数</span>
+        </div>
+    </div>
+
+    <div class="legend-box">
+        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 0.3)"></div>足迹初探 (1处)</div>
+        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 0.6)"></div>深度游览 (2处)</div>
+        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 1.0); box-shadow:0 0 5px gold;"></div>完全探索 (3处+)</div>
     </div>
 
     <div class="sidebar-btn" onclick="toggleSidebar()">☰</div>
+    <!-- 新增：编辑模式开关 (放在下方) -->
+    <div class="sidebar-edit-toggle" onclick="toggleEditMode()" title="开启/关闭编辑模式">✎</div>
     <div class="sidebar" id="sidebar">
-        <div style="padding: 20px 20px 0; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
+        <div style="padding: 20px; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
         <div class="sidebar-content" id="log-container"></div>
     </div>
 
@@ -187,28 +933,93 @@
         </div>
     </div>
 
-    <!-- 录入弹窗 -->
+    <!-- 录入足迹弹窗 -->
     <div id="modal-mask" class="modal-mask">
         <div class="modal">
             <h3 style="margin-top:0; color:#00dfff; border-bottom:1px solid #334; padding-bottom:10px;">记录美好旅程</h3>
-            <div class="form-item"><label>位置</label><input type="text" id="loc-display" readonly style="color:#FFD700; font-weight:bold; border:none; padding-left:0; background:transparent;"></div>
-            <div class="form-item" style="display:flex; gap:10px;">
-                <div style="flex:1;"><label>日期</label><input type="date" id="input-date"></div>
-                <div style="width:80px;"><label>天数</label><input type="number" id="input-days" value="1" min="1" style="text-align:center;"></div>
+
+            <div class="form-item">
+                <label>位置</label>
+                <input type="text" id="loc-display" readonly style="color:#FFD700; font-weight:bold; border:none; padding-left:0; background:transparent;">
             </div>
-            <div class="form-item"><label>选择标签 (多选)</label><div class="tag-selector-container" id="tag-selector-area"></div></div>
+
+            <div class="form-item" style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label>日期</label>
+                    <input type="date" id="input-date">
+                </div>
+                <div style="width:80px;">
+                    <label>天数</label>
+                    <input type="number" id="input-days" value="1" min="1" style="text-align:center;">
+                </div>
+            </div>
+
+            <!-- 标签选择区 -->
+            <div class="form-item">
+                <label>选择标签 (多选)</label>
+                <div class="tag-selector-container" id="tag-selector-area"></div>
+            </div>
+
+            <!-- --- 动态数据输入区 --- -->
+            <!-- 1. 徒步/越野跑 -->
             <div id="data-hike-run" class="dynamic-data-row">
-                <div class="dynamic-input-group"><label>📏 距离(km)</label><input type="number" id="input-distance" step="0.1"></div>
-                <div class="dynamic-input-group"><label>⛰️ 爬升(m)</label><input type="number" id="input-climb"></div></div>
+                <div class="dynamic-input-group">
+                    <label>📏 距离(km)</label>
+                    <input type="number" id="input-distance" step="0.1">
+                </div>
+                <div class="dynamic-input-group">
+                    <label>⛰️ 爬升(m)</label>
+                    <input type="number" id="input-climb">
+                </div>
+            </div>
+
+            <!-- 2. 潜水 -->
             <div id="data-dive" class="dynamic-data-row">
-                <div class="dynamic-input-group"><label>🤿 气瓶数</label><input type="number" id="input-dives"></div></div>
-            <div id="data-ski" class="dynamic-data-row"
-                ><div class="dynamic-input-group"><label>⛷️ 滑雪里程(km)</label><input type="number" id="input-ski-dist" step="0.1"></div></div>
-            <div class="form-item"><label>备注</label><textarea id="input-note" rows="2"></textarea></div>
+                <div class="dynamic-input-group">
+                    <label>🤿 气瓶数</label>
+                    <input type="number" id="input-dives">
+                </div>
+            </div>
+
+            <!-- 3. 新增：滑雪 -->
+            <div id="data-ski" class="dynamic-data-row">
+                <div class="dynamic-input-group">
+                    <label>⛷️ 滑雪里程(km)</label>
+                    <input type="number" id="input-ski-dist" step="0.1">
+                </div>
+            </div>
+            <!-- ----------------------- -->
+
+            <div class="form-item">
+                <label>备注</label>
+                <textarea id="input-note" rows="2"></textarea>
+            </div>
+
             <div class="modal-btns">
-                <button id="btn-delete" class="btn-cancel" style="float:left; border-color:#ff4444; color:#ff4444;" onclick="deleteRecord()">删除</button>
+                <button id="btn-delete" class="btn-del" onclick="deleteRecord()">删除</button>
                 <button class="btn-cancel" onclick="closeModal()">取消</button>
                 <button class="btn-ok" onclick="saveRecord()">保存</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 新增：Base地管理弹窗 -->
+    <div id="base-manager-mask" class="modal-mask">
+        <div class="modal">
+            <h3 style="margin-top:0; color:#FF8C00; border-bottom:1px solid #334; padding-bottom:10px;">Base地管理 (常驻城市)</h3>
+            <div class="tag-input-group">
+                <input type="text" id="new-base-name" placeholder="输入城市名称，如：上海市、苏州市">
+                <button class="btn-ok" onclick="addNewBase()" style="padding:5px 15px; background:#FF8C00;">添加</button>
+            </div>
+            <div class="form-item">
+                <label>已有Base地 (点击删除)</label>
+                <div class="tag-list-manage" id="manage-base-list">
+                    <!-- JS动态生成 -->
+                </div>
+            </div>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeBaseManager()">关闭</button>
             </div>
         </div>
     </div>
@@ -217,589 +1028,1076 @@
     <div id="tag-manager-mask" class="modal-mask">
         <div class="modal">
             <h3 style="margin-top:0; color:#FFD700; border-bottom:1px solid #334; padding-bottom:10px;">标签管理</h3>
-            <div class="form-item" style="display:flex; gap:10px;"><input type="text" id="new-tag-name" placeholder="新标签名"><button class="btn-ok" onclick="addNewTag()" style="padding:5px 15px;">添加</button></div>
-            <div class="form-item"><label>已有标签</label><div class="tag-list-manage" id="manage-tag-list" style="max-height:200px; overflow-y:auto; border:1px solid #334;"></div></div>
-            <div class="modal-btns"><button class="btn-cancel" onclick="closeTagManager()">关闭</button></div>
+            <div class="tag-input-group">
+                <input type="text" id="new-tag-name" placeholder="输入新标签名称，如：滑雪">
+                <button class="btn-ok" onclick="addNewTag()" style="padding:5px 15px;">添加</button>
+            </div>
+            <div class="form-item">
+                <label>已有标签 (点击右侧删除)</label>
+                <div class="tag-list-manage" id="manage-tag-list"></div>
+            </div>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeTagManager()">关闭</button>
+            </div>
         </div>
     </div>
 
-    <!-- Base管理弹窗 -->
-    <div id="base-manager-mask" class="modal-mask">
-        <div class="modal">
-            <h3 style="margin-top:0; color:#FF8C00; border-bottom:1px solid #334; padding-bottom:10px;">Base地管理</h3>
-            <div class="form-item" style="display:flex; gap:10px;"><input type="text" id="new-base-name" placeholder="城市名"><button class="btn-ok" onclick="addNewBase()" style="padding:5px 15px; background:#FF8C00;">添加</button></div>
-            <div class="form-item"><label>已有Base</label><div class="tag-list-manage" id="manage-base-list" style="max-height:200px; overflow-y:auto; border:1px solid #334;"></div></div>
-            <div class="modal-btns"><button class="btn-cancel" onclick="closeBaseManager()">关闭</button></div>
-        </div>
-    </div>
 
-<script>
-    const SUPABASE_URL = 'https://kyslslgfyzunyxpcxody.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_NNtPZSWmyqZiewuAqnjpvA_TEsm9p52'; 
-    
-    // 初始化 SDK
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let currentUser = null;
+    <script>
+        const SUPABASE_URL = 'https://kyslslgfyzunyxpcxody.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_NNtPZSWmyqZiewuAqnjpvA_TEsm9p52';
+        // 初始化 SDK
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentUser = null;
 
-    // --- 2. 基础配置 ---
-    const chartDom = document.getElementById('map-container');
-    const myChart = echarts.init(chartDom);
-    const DATA_KEY = 'travel_map_data_pro';
-    const TAGS_KEY = 'travel_map_tags_list';
-    const BASE_KEY = 'travel_map_bases_list';
+        // --- 2. 基础配置 ---
+        const chartDom = document.getElementById('map-container');
+        const myChart = echarts.init(chartDom);
+        const DATA_KEY = 'travel_map_data_pro';
+        const TAGS_KEY = 'travel_map_tags_list';
+        const BASE_KEY = 'travel_map_bases_list';
 
-    let travelData = JSON.parse(localStorage.getItem(DATA_KEY)) || [];
-    let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['越野跑', '越野跑训练', '滑雪', '徒步', '潜水', '观星', '摄影', '骑行', '中转', '纯玩', '自驾', '美食', '博物馆'];
-    let baseCities = JSON.parse(localStorage.getItem(BASE_KEY)) || [];
-    let editingIndex = null;
-    let tempClickData = null;
-    let currentLevel = 'world'; 
-    let currentScopeName = '';
+        // 加载数据
+        let travelData = JSON.parse(localStorage.getItem(DATA_KEY)) || [];
+        // ... 原有的 travelData 定义 ...
+        let baseCities = JSON.parse(localStorage.getItem(BASE_KEY)) || [];
+        // 默认标签
+        let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['徒步', '滑雪', '自驾', '潜水', '摄影', '美食', '博物馆', '观星', '越野跑', '越野跑训练', '中转'];
 
-    // 字典
-    const CN_MAP = {'China':'中国','United States':'美国','Russia':'俄罗斯','Japan':'日本','Australia':'澳大利亚','Canada':'加拿大',
-                    'United Kingdom':'英国','France':'法国','Germany':'德国','Italy':'意大利','Spain':'西班牙','South Korea':'韩国',
-                    'North Korea':'朝鲜','India':'印度','Thailand':'泰国','Philippines':'菲律宾','Indonesia':'印度尼西亚','Malaysia':'马来西亚',
-                    'Vietnam':'越南','Singapore':'新加坡','Cambodia':'柬埔寨','Laos':'老挝','Myanmar':'缅甸','Brazil':'巴西','Argentina':'阿根廷',
-                    'Mexico':'墨西哥','Egypt':'埃及','South Africa':'南非','Turkey':'土耳其','Netherlands':'荷兰','Switzerland':'瑞士','Sweden':'瑞典',
-                    'Norway':'挪威','Finland':'芬兰','Denmark':'丹麦','New Zealand':'新西兰','United Arab Emirates':'阿联酋','Saudi Arabia':'沙特阿拉伯',
-                    'Portugal':'葡萄牙','Greece':'希腊','Austria':'奥地利','Hungary':'匈牙利','Czech Republic':'捷克','Oman':'阿曼','Jordan':'约旦',
-                    'Iran':'伊朗','Kazakhstan':'哈萨克斯坦','Uzbekistan':'乌兹别克斯坦','Armenia':'亚美尼亚','Azerbaijan':'阿塞拜疆','Georgia':'格鲁吉亚',
-                    'Maldives':'马尔代夫','Ethiopia':'埃塞俄比亚','Tanzania':'坦桑尼亚','Kenya':'肯尼亚','Rwanda':'卢旺达','Nepal':'尼泊尔'};
-    
-    const COUNTRY_ISO = {'China':'cn','United States':'us','Russia':'ru','Japan':'jp','Australia':'au','Canada':'ca','United Kingdom':'gb',
-                         'France':'fr','Germany':'de','Italy':'it','Spain':'es','South Korea':'kr','Thailand':'th','Philippines':'ph',
-                         'Indonesia':'id','Malaysia':'my','Vietnam':'vn','Singapore':'sg','Brazil':'br','Argentina':'ar','Egypt':'eg',
-                         'Turkey':'tr','Netherlands':'nl','Switzerland':'ch','Sweden':'se','New Zealand':'nz','Austria':'at','Hungary':'hu',
-                         'Czech Republic':'cz','Oman':'om','Jordan':'jo','Iran':'ir','Kazakhstan':'kz','Uzbekistan':'uz','Maldives':'mv',
-                         'Ethiopia':'et','Tanzania':'tz','Kenya':'ke','Rwanda':'rw','Nepal':'np'};
-    
-    const MAP_URLS = { world: 'https://code.highcharts.com/mapdata/custom/world-highres.geo.json',
-                      'Thailand':'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json',
-                      'Vietnam':'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json',
-                      'Malaysia':'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json',
-                      'Indonesia':'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json',
-                      'Philippines':'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json',
-                      'United States':'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json',
-                      'Japan':'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json',
-                      'United Kingdom':'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json',
-                      'France':'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json',
-                      'Germany':'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json',
-                      'Italy':'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json',
-                      'Spain':'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json',
-                      'Russia':'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json',
-                      'Australia':'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json',
-                      'Canada':'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json',
-                      'Switzerland':'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json',
-                      'Turkey':'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json',
-                      'Egypt':'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json',
-                      'New Zealand':'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json',
-                      'South Korea':'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json',
-                      'Hungary':'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json',
-                      'Czech Republic':'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json',
-                      'Austria':'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json',
-                      'Oman':'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json',
-                      'Jordan':'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json',
-                      'Iran':'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json',
-                      'Kazakhstan':'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json',
-                      'Uzbekistan':'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json',
-                      'Armenia':'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json',
-                      'Azerbaijan':'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json',
-                      'Georgia':'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json',
-                      'Maldives':'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json',
-                      'Ethiopia':'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json',
-                      'Tanzania':'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json',
-                      'Kenya':'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json',
-                      'Rwanda':'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json',
-                      'Nepal':'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json' };
-    
-    const CHINA_PROVINCES = {'China':100000,'北京市':110000,'天津市':120000,'河北省':130000,'山西省':140000,'内蒙古自治区':150000,'辽宁省':210000,'吉林省':220000,'黑龙江省':230000,
-                             '上海市':310000,'江苏省':320000,'浙江省':330000,'安徽省':340000,'福建省':350000,'江西省':360000,'山东省':370000,'河南省':410000,'湖北省':420000,
-                             '湖南省':430000,'广东省':440000,'广西壮族自治区':450000,'海南省':460000,'重庆市':500000,'四川省':510000,'贵州省':520000,'云南省':530000,
-                             '西藏自治区':540000,'陕西省':610000,'甘肃省':620000,'青海省':630000,'宁夏回族自治区':640000,'新疆维吾尔自治区':650000,'台湾省':710000,'香港特别行政区':810000,'澳门特别行政区':820000};
-    const NO_DRILL_LIST = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
+        // 新增：禁止下钻的区域列表 (直辖市 + 港澳)
+        const NO_DRILL_LIST = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
 
-    // --- 认证与同步逻辑 ---
-    async function handleSignUp() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        if(!email || !password) return alert("请输入邮箱和密码");
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) document.getElementById('login-msg').innerText = error.message;
-        else { alert("注册成功！请检查邮箱或直接登录。"); handleLogin(); }
-    }
 
-    async function handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) document.getElementById('login-msg').innerText = error.message;
-        else { currentUser = data.user; initCloudData(); }
-    }
+        // 字典与配置 (保持原样)
+        const CN_MAP = {
+            'China': '中国', 'United States': '美国', 'Russia': '俄罗斯', 'Japan': '日本', 'Australia': '澳大利亚',
+            'Canada': '加拿大', 'United Kingdom': '英国', 'France': '法国', 'Germany': '德国', 'Italy': '意大利',
+            'Spain': '西班牙', 'South Korea': '韩国', 'North Korea': '朝鲜', 'India': '印度', 'Thailand': '泰国',
+            'Philippines': '菲律宾', 'Indonesia': '印度尼西亚', 'Malaysia': '马来西亚', 'Vietnam': '越南', 'Nepal': '尼泊尔',
+            'Singapore': '新加坡', 'Cambodia': '柬埔寨', 'Laos': '老挝', 'Myanmar': '缅甸', 'Brazil': '巴西',
+            'Argentina': '阿根廷', 'Mexico': '墨西哥', 'Egypt': '埃及', 'South Africa': '南非', 'Turkey': '土耳其',
+            'Netherlands': '荷兰', 'Switzerland': '瑞士', 'Sweden': '瑞典', 'Norway': '挪威', 'Finland': '芬兰',
+            'Denmark': '丹麦', 'New Zealand': '新西兰', 'United Arab Emirates': '阿联酋', 'Saudi Arabia': '沙特阿拉伯',
+            'Portugal': '葡萄牙', 'Greece': '希腊', 'Austria': '奥地利', 'Hungary': '匈牙利', 'Czech Republic': '捷克',
+            'Ethiopia': '埃塞俄比亚', 'United Republic of Tanzania': '坦桑尼亚', 'Kenya': '肯尼亚', 'Rwanda': '卢旺达', 'Oman': '阿曼', 'Jordan': '约旦', 'Iran': '伊朗',
+            'Kazakhstan': '哈萨克斯坦', 'Uzbekistan': '乌兹别克斯坦', 'Armenia': '亚美尼亚', 'Azerbaijan': '阿塞拜疆', 'Georgia': '格鲁吉亚', 'Maldives': '马尔代夫'
+        };
+        const MAP_URLS = {
+            world: 'https://code.highcharts.com/mapdata/custom/world-highres.geo.json',
+            'Thailand': 'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json',
+            'Vietnam': 'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json',
+            'Malaysia': 'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json',
+            'Indonesia': 'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json',
+            'Philippines': 'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json',
+            'United States': 'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json',
+            'Japan': 'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json',
+            'United Kingdom': 'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json',
+            'France': 'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json',
+            'Germany': 'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json',
+            'Italy': 'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json',
+            'Spain': 'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json',
+            'Russia': 'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json',
+            'Australia': 'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json',
+            'Canada': 'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json',
+            'Switzerland': 'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json',
+            'Turkey': 'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json',
+            'Egypt': 'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json',
+            'New Zealand': 'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json',
+            'South Korea': 'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json',
+            'Hungary': 'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json',
+            'Czech Republic': 'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json',
+            'Austria': 'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json',
+            'Ethiopia': 'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json',
+            'United Republic of Tanzania': 'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json',
+            'Kenya': 'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json',
+            'Rwanda': 'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json',
+            'Oman': 'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json',
+            'Jordan': 'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json',
+            'Iran': 'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json',
+            'Kazakhstan': 'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json',
+            'Uzbekistan': 'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json',
+            'Armenia': 'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json',
+            'Azerbaijan': 'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json',
+            'Georgia': 'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json',
+            'Maldives': 'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json',
+            'Nepal': 'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json'
+        };
+        const CHINA_PROVINCES = {
+            'China': 100000, '北京市': 110000, '天津市': 120000, '河北省': 130000, '山西省': 140000, '内蒙古自治区': 150000,
+            '辽宁省': 210000, '吉林省': 220000, '黑龙江省': 230000, '上海市': 310000, '江苏省': 320000, '浙江省': 330000,
+            '安徽省': 340000, '福建省': 350000, '江西省': 360000, '山东省': 370000, '河南省': 410000, '湖北省': 420000,
+            '湖南省': 430000, '广东省': 440000, '广西壮族自治区': 450000, '海南省': 460000, '重庆市': 500000, '四川省': 510000,
+            '贵州省': 520000, '云南省': 530000, '西藏自治区': 540000, '陕西省': 610000, '甘肃省': 620000, '青海省': 630000,
+            '宁夏回族自治区': 640000, '新疆维吾尔自治区': 650000, '台湾省': 710000, '香港特别行政区': 810000, '澳门特别行政区': 820000
+        };
+        const COUNTRY_ISO = {
+            'China': 'cn', 'United States': 'us', 'United States of America': 'us',
+            'Russia': 'ru', 'Japan': 'jp', 'Australia': 'au', 'Canada': 'ca', 'Nepal': 'np',
+            'United Kingdom': 'gb', 'France': 'fr', 'Germany': 'de', 'Italy': 'it',
+            'Spain': 'es', 'South Korea': 'kr', 'North Korea': 'kp', 'India': 'in',
+            'Thailand': 'th', 'Philippines': 'ph', 'Indonesia': 'id', 'Malaysia': 'my',
+            'Vietnam': 'vn', 'Singapore': 'sg', 'Cambodia': 'kh', 'Laos': 'la',
+            'Myanmar': 'mm', 'Brazil': 'br', 'Argentina': 'ar', 'Mexico': 'mx',
+            'Egypt': 'eg', 'South Africa': 'za', 'Turkey': 'tr', 'Netherlands': 'nl',
+            'Switzerland': 'ch', 'Sweden': 'se', 'Norway': 'no', 'Finland': 'fi',
+            'Denmark': 'dk', 'New Zealand': 'nz', 'United Arab Emirates': 'ae',
+            'Saudi Arabia': 'sa', 'Portugal': 'pt', 'Greece': 'gr', 'Austria': 'at',
+            'Hungary': 'hu', 'Czech Republic': 'cz', 'Ethiopia': 'et',
+            'United Republic of Tanzania': 'tz', 'Kenya': 'ke',
+            'Rwanda': 'rw', 'Oman': 'om', 'Jordan': 'jo', 'Iran': 'ir',
+            'Kazakhstan': 'kz', 'Uzbekistan': 'uz', 'Maldives': 'mv',
+            'Armenia': 'am', 'Azerbaijan': 'az', 'Georgia': 'ge'
+        };
+        let currentLevel = 'world';
+        let currentScopeName = '';
+        let tempClickData = null;
+        let editingIndex = null;
 
-    async function handleLogout() {
-        await supabaseClient.auth.signOut();
-        location.reload();
-    }
-
-    function useOfflineMode() { document.getElementById('login-mask').style.display = 'none'; }
-
-    async function initCloudData() {
-        document.getElementById('login-mask').style.display = 'none';
-        document.getElementById('user-status').style.display = 'block';
-        document.getElementById('user-email').innerText = currentUser.email.split('@')[0];
-
-        const { data, error } = await supabaseClient.from('user_profiles').select('*').eq('id', currentUser.id).single();
-        if (data) {
-            travelData = data.travel_data || [];
-            userTags = data.tags || userTags;
-            baseCities = data.bases || [];
-            localStorage.setItem(DATA_KEY, JSON.stringify(travelData)); // 同步到本地
-        } else {
-            saveToCloud(); // 新用户同步本地到云端
+        // --- 认证与同步逻辑 ---
+        async function handleSignUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if (!email || !password) return alert("请输入邮箱和密码");
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) document.getElementById('login-msg').innerText = error.message;
+            else { alert("注册成功！请检查邮箱或直接登录。"); handleLogin(); }
         }
-        updateLogSidebar(); updateStats(); renderWorld();
-    }
 
-    async function saveToCloud() {
-        if (!currentUser) return;
-        const { error } = await supabaseClient.from('user_profiles').upsert({ 
-            id: currentUser.id, travel_data: travelData, tags: userTags, bases: baseCities
-        });
-        if (error) console.error("同步失败:", error);
-    }
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) document.getElementById('login-msg').innerText = error.message;
+            else { currentUser = data.user; initCloudData(); }
+        }
 
-    // --- 核心业务逻辑 ---
-    function setupClickEvent(country, fixedProvince) {
-        myChart.off('click');
-        myChart.on('click', params => {
-            if (params.componentType === 'geo') {
-                let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
-                tempClickData = { country: country, province: fixedProvince || params.name, city: fixedProvince ? params.name : '', lng: coord[0], lat: coord[1] };
-                let cnC = CN_MAP[country] || country;
-                let loc = cnC + (tempClickData.city ? ` · ${tempClickData.province} · ${tempClickData.city}` : ` · ${tempClickData.province}`);
-                
-                document.getElementById('loc-display').value = loc;
-                document.getElementById('input-date').valueAsDate = new Date();
-                document.getElementById('input-days').value = 1;
-                document.getElementById('input-note').value = '';
-                document.getElementById('input-distance').value = ''; document.getElementById('input-climb').value = ''; 
-                document.getElementById('input-dives').value = ''; document.getElementById('input-ski-dist').value = '';
-                document.getElementById('data-hike-run').classList.remove('active'); document.getElementById('data-dive').classList.remove('active'); document.getElementById('data-ski').classList.remove('active');
-                
-                editingIndex = null;
-                document.getElementById('btn-delete').style.display = 'none';
-                
-                const tagArea = document.getElementById('tag-selector-area');
-                tagArea.innerHTML = '';
-                userTags.forEach(tag => {
-                    let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
-                    span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
-                    tagArea.appendChild(span);
-                });
-                document.getElementById('modal-mask').style.display = 'flex';
+        async function handleLogout() {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        }
+
+        function useOfflineMode() { document.getElementById('login-mask').style.display = 'none'; }
+
+        async function initCloudData() {
+            document.getElementById('login-mask').style.display = 'none';
+            document.getElementById('user-status').style.display = 'block';
+            document.getElementById('user-email').innerText = currentUser.email.split('@')[0];
+
+            const { data, error } = await supabaseClient.from('user_profiles').select('*').eq('id', currentUser.id).single();
+            if (data) {
+                travelData = data.travel_data || [];
+                userTags = data.tags || userTags;
+                baseCities = data.bases || [];
+                localStorage.setItem(DATA_KEY, JSON.stringify(travelData)); // 同步到本地
+            } else {
+                saveToCloud(); // 新用户同步本地到云端
             }
-        });
-    }
+            updateLogSidebar(); updateStats(); renderWorld();
+        }
 
-    function editRecord(index) {
-        const r = travelData[index];
-        editingIndex = index;
-        tempClickData = { country: r.country, province: r.province, city: r.city, lng: r.lng, lat: r.lat };
-        document.getElementById('loc-display').value = (CN_MAP[r.country]||r.country) + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
-        document.getElementById('input-date').value = r.date;
-        document.getElementById('input-days').value = r.days || 1;
-        document.getElementById('input-note').value = r.note || '';
-        document.getElementById('input-distance').value = r.distance || '';
-        document.getElementById('input-climb').value = r.climb || '';
-        document.getElementById('input-dives').value = r.dives || '';
-        document.getElementById('input-ski-dist').value = r.skiDist || '';
-        
-        document.getElementById('btn-delete').style.display = 'inline-block';
-        const tagArea = document.getElementById('tag-selector-area');
-        tagArea.innerHTML = '';
-        userTags.forEach(tag => {
-            let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
-            if (r.tags && r.tags.includes(tag)) span.classList.add('selected');
-            span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
-            tagArea.appendChild(span);
-        });
-        checkDynamicInputs();
-        document.getElementById('modal-mask').style.display = 'flex';
-    }
-
-    function saveRecord() {
-        const date = document.getElementById('input-date').value;
-        const note = document.getElementById('input-note').value;
-        const days = parseInt(document.getElementById('input-days').value) || 1;
-        const dist = document.getElementById('input-distance').value;
-        const climb = document.getElementById('input-climb').value;
-        const dives = document.getElementById('input-dives').value;
-        const skiDist = document.getElementById('input-ski-dist').value;
-        
-        let selectedTags = [];
-        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
-
-        const recordObj = { ...tempClickData, date, days, note, tags: selectedTags, distance: dist, climb: climb, dives: dives, skiDist: skiDist };
-
-        if (editingIndex !== null) travelData[editingIndex] = recordObj;
-        else travelData.push(recordObj);
-
-        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
-        saveToCloud(); // 云端保存
-        closeModal();
-        updateLogSidebar(); updateStats();
-        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
-        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
-        else if (currentLevel === 'world') renderWorld();
-        else renderChina();
-    }
-
-    function deleteRecord() {
-        if (editingIndex === null) return;
-        if (!confirm("确定删除？")) return;
-        travelData.splice(editingIndex, 1);
-        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
-        saveToCloud();
-        closeModal();
-        updateLogSidebar(); updateStats();
-        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
-        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
-        else if (currentLevel === 'world') renderWorld();
-        else renderChina();
-    }
-
-    function checkDynamicInputs() {
-        let selectedTags = [];
-        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
-        const tStr = selectedTags.join(',');
-        const divHike = document.getElementById('data-hike-run');
-        const divDive = document.getElementById('data-dive');
-        const divSki = document.getElementById('data-ski');
-        if ((tStr.includes('徒步') || tStr.includes('越野跑'))) divHike.classList.add('active'); else divHike.classList.remove('active');
-        if (tStr.includes('潜水')) divDive.classList.add('active'); else divDive.classList.remove('active');
-        if (tStr.includes('滑雪')) divSki.classList.add('active'); else divSki.classList.remove('active');
-    }
-
-    // --- 侧边栏与渲染 ---
-    function updateLogSidebar() {
-        const container = document.getElementById('log-container');
-        container.innerHTML = '';
-        
-        let indexedData = travelData.map((item, index) => ({...item, originalIndex: index}));
-        let groups = {};
-        indexedData.forEach(r => { let y = r.date.substring(0,4)||'未知'; if(!groups[y]) groups[y]=[]; groups[y].push(r); });
-
-        Object.keys(groups).sort((a,b)=>b-a).forEach(year => {
-            let recs = groups[year].sort((a,b) => new Date(b.date)-new Date(a.date));
-            let totalDays = recs.reduce((sum, r) => sum + (parseInt(r.days)||1), 0);
-
-            // 统计
-            let stats = { hike: { count: 0, dist: 0, climb: 0 }, dive: { count: 0 }, run:  { count: 0, dist: 0, climb: 0 } };
-            recs.forEach(r => {
-                const tStr = (r.tags||[]).join(',');
-                if (tStr.includes('徒步')) { stats.hike.count++; stats.hike.dist+=parseFloat(r.distance)||0; stats.hike.climb+=parseFloat(r.climb)||0; }
-                if (tStr.includes('潜水')) { stats.dive.count+=parseFloat(r.dives)||0; }
-                if (tStr.includes('越野跑')) { stats.run.count++; stats.run.dist+=parseFloat(r.distance)||0; stats.run.climb+=parseFloat(r.climb)||0; }
+        async function saveToCloud() {
+            if (!currentUser) return;
+            const { error } = await supabaseClient.from('user_profiles').upsert({
+                id: currentUser.id, travel_data: travelData, tags: userTags, bases: baseCities
             });
-            let statsContent = '';
-            if (stats.hike.count > 0) statsContent += `<div class="summary-row sum-hike"><span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span><span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span></div>`;
-            if (stats.run.count > 0) statsContent += `<div class="summary-row sum-run"><span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span><span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span></div>`;
-            if (stats.dive.count > 0) statsContent += `<div class="summary-row sum-dive"><span class="sum-title">🤿 潜水</span><span class="sum-data">累计 ${stats.dive.count} 瓶</span></div>`;
-            let summaryDiv = document.createElement('div'); if (statsContent) summaryDiv.innerHTML = `<div class="year-summary-box">${statsContent}</div>`;
+            if (error) console.error("云端同步失败:", error);
+            else console.log("云端同步成功");
+        }
 
-            let header = document.createElement('div');
-            header.className = 'year-header';
-            header.innerHTML = `<span>${year}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
-            let list = document.createElement('div');
-            list.className = 'record-list';
+        // --- 样式逻辑 ---
+        function getCommonOption(mapName, regions, series = []) {
+            const isWorld = mapName === 'world';
+            return {
+                backgroundColor: 'rgba(0,0,0,0)',
+                tooltip: {
+                    trigger: 'item', backgroundColor: 'rgba(0,10,20,0.9)', borderColor: '#00dfff', textStyle: { color: '#fff' },
+                    formatter: params => {
+                        if (params.componentType === 'series') {
+                            const d = params.data.custom;
+                            let tagsStr = d.tags && d.tags.length ? `<br>标签: <span style="color:#00dfff">${d.tags.join(', ')}</span>` : '';
+                            let daysStr = d.days ? `<br>时长: ${d.days}天` : '';
+                            return `<b>${params.data.name}</b><br>${d.date}${daysStr}${tagsStr}<br>${d.note}`;
+                        }
+                        return CN_MAP[params.name] || params.name;
+                    }
+                },
+                geo: {
+                    map: mapName, roam: true, aspectScale: 0.75, layoutCenter: ['50%', '50%'], layoutSize: '100%',
+                    label: {
+                        show: true, color: '#fff', fontSize: 10, textShadowColor: '#000', textShadowBlur: 2,
+                        formatter: p => isWorld ? (CN_MAP[p.name] ? CN_MAP[p.name] : "") : p.name
+                    },
+                    itemStyle: {
+                        areaColor: '#1a2b3c', borderColor: '#4facfe', borderWidth: 0.6,
+                        shadowColor: 'rgba(0, 223, 255, 0.4)', shadowBlur: 10
+                    },
+                    emphasis: { itemStyle: { areaColor: '#00dfff', shadowBlur: 20 }, label: { show: true, color: '#000' } },
+                    select: { disabled: true },
+                    regions: regions
+                },
+                series: series
+            };
+        }
 
-            recs.forEach(r => {
-                let div = document.createElement('div');
-                div.className = 'record-item';
-                
-                let bgUrl = ''; let borderColor = '';
-                if (r.tags && r.tags.length > 0) {
-                    const t = r.tags.join(',');
-                   if (t.includes('越野跑')) { // 包含"越野跑"或"越野跑训练"
-    bgUrl = 'https://images.unsplash.com/photo-1504025468847-0e438279542c?q=80&w=400';
-    borderColor = '#ffaa00';  // 橙色
-} else if (t.includes('滑雪')) {
-    bgUrl = 'https://images.unsplash.com/photo-1511880200544-0170efd77eff?q=80&w=400';
-    borderColor = '#00dfff'; // 冰蓝
-} else if (t.includes('潜水')) {
-    bgUrl = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400';
-    borderColor = '#0055ff'; // 深蓝
-} else if (t.includes('观星')) {
-    bgUrl = 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400';
-    borderColor = '#9933ff'; // 紫色
-} else if (t.includes('徒步')) {
-    bgUrl = 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400';
-    borderColor = '#50c878'; // 绿色
-} else if (t.includes('摄影')) {
-    bgUrl = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400';
-    borderColor = '#ccc'; // 银灰
-} else if (t.includes('自驾')) {
-    bgUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400';
-    borderColor = '#FFD700'; // 金黄
-} else if (t.includes('美食')) {
-    bgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400';
-    borderColor = '#ff4444'; // 红色
-} else if (t.includes('中转')) {
-    bgUrl = 'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
-    borderColor = '#708090'; // 石板灰
-} else if (t.includes('纯玩')) {
-    bgUrl = 'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
-    borderColor = '#FFE4E1'; // 薄雾玫瑰
-} else if (t.includes('骑行')) {
-    bgUrl = 'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
-    borderColor = '#BDB76B'; // 
-} else if (t.includes('博物馆')) {
-    bgUrl = 'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
-    borderColor = '#eebb44'; // 古典金/琥珀色
-}
+        // --- 标签管理逻辑 ---
+        function openTagManager() {
+            const listDiv = document.getElementById('manage-tag-list');
+            listDiv.innerHTML = '';
+            userTags.forEach((tag, index) => {
+                let item = document.createElement('div');
+                item.className = 'manage-tag-item';
+                item.innerHTML = `<span>${tag}</span> <span class="btn-del-tag" onclick="deleteTag(${index})">删除</span>`;
+                listDiv.appendChild(item);
+            });
+            document.getElementById('tag-manager-mask').style.display = 'block';
+        }
+
+        function closeTagManager() { document.getElementById('tag-manager-mask').style.display = 'none'; }
+
+        function addNewTag() {
+            const input = document.getElementById('new-tag-name');
+            const val = input.value.trim();
+            if (val && !userTags.includes(val)) {
+                userTags.push(val);
+                localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
+                saveToCloud();
+                input.value = '';
+                openTagManager();
+            } else if (userTags.includes(val)) {
+                alert('标签已存在');
+            }
+        }
+
+        // --- 新增：Base 管理逻辑 ---
+        function openBaseManager() {
+            const listDiv = document.getElementById('manage-base-list');
+            listDiv.innerHTML = '';
+            baseCities.forEach((city, index) => {
+                let item = document.createElement('div');
+                item.className = 'manage-tag-item';
+                // 橙色显示
+                item.innerHTML = `<span style="color:#FF8C00">${city}</span> <span class="btn-del-tag" onclick="deleteBase(${index})">删除</span>`;
+                listDiv.appendChild(item);
+            });
+            document.getElementById('base-manager-mask').style.display = 'block';
+        }
+
+        function closeBaseManager() {
+            document.getElementById('base-manager-mask').style.display = 'none';
+            // 关闭时刷新地图，以显示/移除橙色
+            if (currentLevel === 'china') renderChina();
+            else if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
+        }
+
+        function addNewBase() {
+            const input = document.getElementById('new-base-name');
+            const val = input.value.trim();
+            if (val && !baseCities.includes(val)) {
+                baseCities.push(val);
+                localStorage.setItem(BASE_KEY, JSON.stringify(baseCities));
+                saveToCloud();
+                input.value = '';
+                openBaseManager();
+            } else if (baseCities.includes(val)) {
+                alert('该城市已设为Base');
+            }
+        }
+
+        function deleteBase(index) {
+            if (confirm('确定移除该Base地吗？')) {
+                baseCities.splice(index, 1);
+                localStorage.setItem(BASE_KEY, JSON.stringify(baseCities));
+                saveToCloud();
+                openBaseManager();
+            }
+        }
+        function deleteTag(index) {
+            if (confirm('确定删除此标签吗？')) {
+                userTags.splice(index, 1);
+                localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
+                saveToCloud();
+                openTagManager();
+            }
+        }
+
+        // --- 录入窗口逻辑 (含标签选择与天数) ---
+        function setupClickEvent(country, fixedProvince) {
+            myChart.off('click');
+            myChart.on('click', params => {
+                if (params.componentType === 'geo') {
+                    // 1. 获取点击坐标
+                    let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
+
+                    // 2. 初始化临时数据
+                    tempClickData = {
+                        country: country,
+                        province: fixedProvince || params.name,
+                        city: fixedProvince ? params.name : '',
+                        lng: coord[0],
+                        lat: coord[1]
+                    };
+
+                    // 3. 设置位置回显
+                    let cnC = CN_MAP[country] || country;
+                    let loc = cnC + (tempClickData.city ? ` · ${tempClickData.province} · ${tempClickData.city}` : ` · ${tempClickData.province}`);
+                    document.getElementById('loc-display').value = loc;
+
+                    // 4. 重置常规输入框
+                    document.getElementById('input-date').valueAsDate = new Date();
+                    document.getElementById('input-days').value = 1;
+                    document.getElementById('input-note').value = '';
+
+                    // 5. 重置并隐藏动态数据输入框 (注意：必须对应 HTML 中的 ID)
+                    document.getElementById('input-distance').value = '';
+                    document.getElementById('input-climb').value = '';
+                    document.getElementById('input-dives').value = '';
+                    document.getElementById('input-ski-dist').value = ''; // 新增：滑雪
+
+                    // 移除所有激活状态类
+                    document.getElementById('data-hike-run').classList.remove('active');
+                    document.getElementById('data-dive').classList.remove('active');
+                    document.getElementById('data-ski').classList.remove('active'); // 新增：滑雪
+
+                    // 6. 重置编辑状态 (隐藏删除按钮)
+                    editingIndex = null;
+                    const delBtn = document.getElementById('btn-delete');
+                    if (delBtn) delBtn.style.display = 'none';
+
+                    // 7. 生成标签选择器
+                    const tagArea = document.getElementById('tag-selector-area');
+                    if (tagArea) {
+                        tagArea.innerHTML = '';
+                        userTags.forEach(tag => {
+                            let span = document.createElement('span');
+                            span.className = 'tag-option';
+                            span.innerText = tag;
+
+                            // 绑定点击事件
+                            span.onclick = function () {
+                                this.classList.toggle('selected');
+                                checkDynamicInputs(); // 点击时立即检查是否需要显示输入框
+                            };
+
+                            tagArea.appendChild(span);
+                        });
+                    }
+
+                    // 8. 显示弹窗
+                    document.getElementById('modal-mask').style.display = 'block';
                 }
-                if (borderColor) div.style.borderLeftColor = borderColor;
+            });
+        }
 
-                let statsHtml = '';
-                let parts = [];
-                if (r.distance) parts.push(`📏 ${r.distance}km`);
-                if (r.climb) parts.push(`⛰️ ${r.climb}m`);
-                if (r.dives) parts.push(`🤿 ${r.dives}瓶`);
-                if (r.skiDist) parts.push(`⛷️ ${r.skiDist}km`);
-                if (parts.length > 0) statsHtml = `<div style="margin-top:4px; font-size:11px; color:#FFD700; text-shadow: 0 1px 2px black;">${parts.join(' &nbsp;|&nbsp; ')}</div>`;
+        function closeModal() { document.getElementById('modal-mask').style.display = 'none'; }
 
-                let noteHtml = r.note ? `<div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic;">${r.note}</div>` : '';
-                let cn = CN_MAP[r.country] || r.country;
-                let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
-                let tagsHtml = ''; if(r.tags) r.tags.forEach(t => tagsHtml += `<span class="rec-tag-badge">${t}</span>`);
-                let iso = COUNTRY_ISO[r.country] ? COUNTRY_ISO[r.country].toLowerCase() : null;
-                let flagImg = iso ? `<img src="https://flagcdn.com/w40/${iso}.png" class="flag-icon">` : '';
-                let bgDiv = bgUrl ? `<div class="rec-bg-img" style="background-image: url('${bgUrl}');"></div>` : '';
+        function saveRecord() {
+            // 1. 获取基础数据
+            const date = document.getElementById('input-date').value;
+            const note = document.getElementById('input-note').value;
+            const days = parseInt(document.getElementById('input-days').value) || 1;
 
-                   div.innerHTML = `
-        ${bgDiv}
-        <div class="rec-content">
-            <div class="rec-top">
-                <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
-                <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
-            </div>
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
-                <div class="rec-tags">${tagsHtml}</div>
-            </div>
-            ${statsHtml}
-            ${noteHtml}
-        </div>
-        <span class="rec-days">${r.days || 1}天</span>
-    `;
-    list.appendChild(div);
-});
+            // 2. 获取动态数据
+            const dist = document.getElementById('input-distance').value;
+            const climb = document.getElementById('input-climb').value;
+            const dives = document.getElementById('input-dives').value;
+            const skiDist = document.getElementById('input-ski-dist').value; // 新增
 
-            header.onclick = function() {
-                const sumBox = summaryDiv.querySelector('.year-summary-box');
-                if (list.style.display === 'none') {
-                    list.style.display = 'block'; if(sumBox) sumBox.style.display = 'block';
-                } else {
-                    list.style.display = 'none'; if(sumBox) sumBox.style.display = 'none';
+            // 3. 获取标签
+            let selectedTags = [];
+            document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
+
+            // 4. 构建对象
+            const recordObj = {
+                ...tempClickData,
+                date, days, note,
+                tags: selectedTags,
+                // 数据字段
+                distance: dist,
+                climb: climb,
+                dives: dives,
+                skiDist: skiDist // 保存滑雪里程
+            };
+
+            if (editingIndex !== null) {
+                travelData[editingIndex] = recordObj;
+                editingIndex = null;
+            } else {
+                travelData.push(recordObj);
+            }
+
+            // 5. 保存并刷新
+            localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
+            saveToCloud();
+
+            closeModal();
+            updateLogSidebar();
+            updateStats();
+
+            // 刷新地图
+            if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
+            else if (currentLevel === 'foreign') renderForeign(currentScopeName);
+            else if (currentLevel === 'world') renderWorld();
+            else renderChina();
+        }
+
+        // --- 新增：检查标签并显示对应输入框的辅助函数 ---
+        function checkDynamicInputs() {
+            // 1. 获取所有已选标签
+            let selectedTags = [];
+            document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
+            const tStr = selectedTags.join(',');
+
+            // 2. 逻辑判断
+            const showHikeRun = tStr.includes('徒步') || tStr.includes('越野跑');
+            const showDive = tStr.includes('潜水');
+            const showSki = tStr.includes('滑雪');
+
+            // 3. 切换 DOM 显示状态
+            const divHike = document.getElementById('data-hike-run');
+            const divDive = document.getElementById('data-dive');
+            const divSki = document.getElementById('data-ski');
+
+            if (divHike) {
+                if (showHikeRun) divHike.classList.add('active');
+                else divHike.classList.remove('active');
+            }
+            if (divDive) {
+                if (showDive) divDive.classList.add('active');
+                else divDive.classList.remove('active');
+            }
+            if (divSki) {
+                if (showSki) divSki.classList.add('active');
+                else divSki.classList.remove('active');
+            }
+        }
+
+        // --- 新增：删除记录逻辑 ---
+        function deleteRecord() {
+            if (editingIndex === null) return; // 防御性代码
+            if (!confirm("确定要删除这条足迹吗？此操作无法撤销。")) return;
+
+            // 从数组中移除
+            travelData.splice(editingIndex, 1);
+            // 更新本地存储
+            localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
+            saveToCloud();
+            closeModal();
+            updateLogSidebar();
+            updateStats();
+
+            // 刷新当前地图视图
+            if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
+            else if (currentLevel === 'foreign') renderForeign(currentScopeName);
+            else if (currentLevel === 'world') renderWorld();
+            else renderChina();
+        }
+        // --- 新增：触发编辑逻辑 ---
+        function editRecord(index) {
+            const r = travelData[index];
+            editingIndex = index; // 标记当前正在编辑
+
+            // 1. 恢复临时数据 (防止保存时经纬度丢失)
+            tempClickData = {
+                country: r.country,
+                province: r.province,
+                city: r.city,
+                lng: r.lng,
+                lat: r.lat
+            };
+
+            // 2. 回显常规数据
+            let cnC = CN_MAP[r.country] || r.country;
+            let loc = cnC + (r.city ? ` · ${r.province} · ${r.city}` : ` · ${r.province}`);
+            document.getElementById('loc-display').value = loc + " (编辑)";
+            document.getElementById('input-date').value = r.date;
+            document.getElementById('input-days').value = r.days || 1;
+            document.getElementById('input-note').value = r.note || '';
+
+            // 3. 回显动态数据 (新增)
+            document.getElementById('input-distance').value = r.distance || '';
+            document.getElementById('input-climb').value = r.climb || '';
+            document.getElementById('input-dives').value = r.dives || '';
+            document.getElementById('input-ski-dist').value = r.skiDist || '';
+
+            // 4. 显示删除按钮
+            document.getElementById('btn-delete').style.display = 'inline-block'; // 这里要用 block 或 inline-block，取决于你的 CSS
+
+            // 5. 回显标签选中状态
+            const tagArea = document.getElementById('tag-selector-area');
+            tagArea.innerHTML = '';
+            userTags.forEach(tag => {
+                let span = document.createElement('span');
+                span.className = 'tag-option';
+                span.innerText = tag;
+
+                // 如果记录中有这个标签，设为选中
+                if (r.tags && r.tags.includes(tag)) {
+                    span.classList.add('selected');
+                }
+
+                // 绑定点击事件
+                span.onclick = function () {
+                    this.classList.toggle('selected');
+                    checkDynamicInputs();
+                };
+                tagArea.appendChild(span);
+            });
+
+            // 6. 初始化动态输入框显示状态 (根据回显的标签)
+            checkDynamicInputs();
+
+            // 7. 打开弹窗
+            document.getElementById('modal-mask').style.display = 'block';
+        }
+
+        // --- 侧边栏 (年份统计与标签显示) ---
+        function updateLogSidebar() {
+            const container = document.getElementById('log-container');
+            container.innerHTML = '';
+
+            // 索引映射
+            let indexedData = travelData.map((item, index) => ({ ...item, originalIndex: index }));
+            let groups = {};
+            indexedData.forEach(r => {
+                let y = r.date.substring(0, 4) || '未知';
+                if (!groups[y]) groups[y] = [];
+                groups[y].push(r);
+            });
+
+            Object.keys(groups).sort((a, b) => b - a).forEach(year => {
+                let recs = groups[year].sort((a, b) => new Date(b.date) - new Date(a.date));
+                let totalDays = recs.reduce((sum, r) => sum + (parseInt(r.days) || 1), 0);
+
+                // --- A. 计算年度运动统计 ---
+                let stats = {
+                    hike: { count: 0, dist: 0, climb: 0 },
+                    dive: { count: 0 }, // 潜水通常统计气瓶数(dives)或次数
+                    run: { count: 0, dist: 0, climb: 0 }
+                };
+
+                recs.forEach(r => {
+                    const tStr = (r.tags || []).join(',');
+
+                    // 徒步统计
+                    if (tStr.includes('徒步')) {
+                        stats.hike.count++;
+                        stats.hike.dist += parseFloat(r.distance) || 0;
+                        stats.hike.climb += parseFloat(r.climb) || 0;
+                    }
+
+                    // 潜水统计 (累计气瓶数)
+                    if (tStr.includes('潜水')) {
+                        // 这里假设每次记录是一次潜水旅行，累加输入的 input-dives
+                        // 如果只是一次记录算一次，就用 count++，这里采用累加气瓶数逻辑
+                        stats.dive.count += parseFloat(r.dives) || 0;
+                    }
+
+                    // 越野跑统计 (含训练)
+                    if (tStr.includes('越野跑')) {
+                        stats.run.count++;
+                        stats.run.dist += parseFloat(r.distance) || 0;
+                        stats.run.climb += parseFloat(r.climb) || 0;
+                    }
+                });
+
+                // 构建统计 HTML (仅当有数据时显示对应行)
+                let statsContent = '';
+
+                if (stats.hike.count > 0) {
+                    statsContent += `
+                                <div class="summary-row sum-hike">
+                                    <span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span>
+                                    <span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span>
+                                </div>`;
+                }
+                if (stats.run.count > 0) {
+                    statsContent += `
+                                <div class="summary-row sum-run">
+                                    <span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span>
+                                    <span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span>
+                                </div>`;
+                }
+                if (stats.dive.count > 0) {
+                    statsContent += `
+                                <div class="summary-row sum-dive">
+                                    <span class="sum-title">🤿 潜水</span>
+                                    <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
+                                </div>`;
+                }
+
+                // 只有当有运动数据时，才包裹外框
+                let summaryBoxHtml = '';
+                if (statsContent) {
+                    summaryBoxHtml = `<div class="year-summary-box">${statsContent}</div>`;
+                }
+
+                // 年份标题
+                let header = document.createElement('div');
+                header.className = 'year-header';
+                header.innerHTML = `<span>${year}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
+
+                // 2. 统计面板容器 (新建)
+                let summaryDiv = document.createElement('div');
+                summaryDiv.innerHTML = summaryBoxHtml;
+                // 注意：summaryDiv 本身是个 wrapper，我们需要控制内部 .year-summary-box 的显示
+
+                // 列表容器
+                let list = document.createElement('div');
+                list.className = 'record-list';
+                list.style.display = 'none'; // 默认折叠
+
+                recs.forEach(r => {
+                    let div = document.createElement('div');
+                    div.className = 'record-item';
+
+                    // --- 1. 背景图与边框颜色匹配逻辑 ---
+                    let bgUrl = '';
+                    let borderColor = ''; // 默认边框
+
+                    if (r.tags && r.tags.length > 0) {
+                        const t = r.tags.join(',');
+
+                        if (t.includes('越野跑')) { // 包含"越野跑"或"越野跑训练"
+                            bgUrl = 'https://images.unsplash.com/photo-1504025468847-0e438279542c?q=80&w=400';
+                            borderColor = '#ffaa00';  // 橙色
+                        } else if (t.includes('滑雪')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1511880200544-0170efd77eff?q=80&w=400';
+                            borderColor = '#00dfff'; // 冰蓝
+                        } else if (t.includes('潜水')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400';
+                            borderColor = '#0055ff'; // 深蓝
+                        } else if (t.includes('观星')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400';
+                            borderColor = '#9933ff'; // 紫色
+                        } else if (t.includes('徒步')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400';
+                            borderColor = '#50c878'; // 绿色
+                        } else if (t.includes('摄影')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400';
+                            borderColor = '#ccc'; // 银灰
+                        } else if (t.includes('自驾')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400';
+                            borderColor = '#FFD700'; // 金黄
+                        } else if (t.includes('美食')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400';
+                            borderColor = '#ff4444'; // 红色
+                        } else if (t.includes('中转')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
+                            borderColor = '#708090'; // 石板灰
+                        } else if (t.includes('纯玩')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
+                            borderColor = '#FFE4E1'; // 薄雾玫瑰
+                        } else if (t.includes('骑行')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
+                            borderColor = '#BDB76B'; //
+                        } else if (t.includes('博物馆')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
+                            borderColor = '#eebb44'; // 古典金/琥珀色
+                        }
+                    }
+
+                    // 应用边框色
+                    if (borderColor) div.style.borderLeftColor = borderColor;
+
+                    // --- 2. 构建内容 ---
+                    let cn = CN_MAP[r.country] || r.country;
+                    let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
+
+                    let tagsHtml = '';
+                    if (r.tags) r.tags.forEach(tag => tagsHtml += `<span class="rec-tag-badge">${tag}</span>`);
+
+                    // 国旗
+                    let iso = (typeof COUNTRY_ISO !== 'undefined' && COUNTRY_ISO[r.country]) ? COUNTRY_ISO[r.country].toLowerCase() : null;
+                    let flagImg = iso ? `<img src="https://flagcdn.com/w40/${iso}.png" class="flag-icon">` : '';
+
+                    // 背景图 HTML
+                    let bgDiv = bgUrl ? `<div class="rec-bg-img" style="background-image: url('${bgUrl}');"></div>` : '';
+
+                    // --- 新增：构建数据展示 HTML ---
+                    let statsHtml = '';
+                    if (r.distance || r.climb || r.dives || r.skiDist) {
+                        let parts = [];
+                        if (r.distance) parts.push(`📏 ${r.distance}km`);
+                        if (r.climb) parts.push(`⛰️ ${r.climb}m`);
+                        if (r.dives) parts.push(`🤿 ${r.dives}瓶`);
+                        if (r.skiDist) parts.push(`⛷️ ${r.skiDist}km`);
+                        // 用金色字体显示
+                        statsHtml = `<div style="margin-top:4px; font-size:11px; color:#FFD700;">${parts.join(' &nbsp;|&nbsp; ')}</div>`;
+                    }
+
+                    // --- 新增：备注显示逻辑 ---
+                    let noteHtml = '';
+                    if (r.note && r.note.trim() !== '') {
+                        noteHtml = `
+                                    <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
+                                        ${r.note}
+                                    </div>
+                                `;
+                    }
+
+                    div.innerHTML = `
+                                ${bgDiv}
+                                <div class="rec-content">
+                                    <div class="rec-top">
+                                        <div style="display:flex; align-items:center;">
+                                            ${flagImg} <span>${place}</span>
+                                        </div><span class="rec-days">${r.days || 1}天</span>
+                                        <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+                                    </div>
+                                     <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                                        <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                                        <div class="rec-tags">${tagsHtml}</div>
+                                    </div>
+
+                                    ${statsHtml}
+                                    ${noteHtml}
+
+                                    </div>
+
+                            `;
+                    list.appendChild(div);
+                });
+
+                // --- C. 点击折叠事件 (同时控制列表和统计框) ---
+                header.onclick = function () {
+                    const sumBox = summaryDiv.querySelector('.year-summary-box');
+                    if (list.style.display === 'none') {
+                        list.style.display = 'block';
+                        if (sumBox) sumBox.style.display = 'block';
+                    } else {
+                        list.style.display = 'none';
+                        if (sumBox) sumBox.style.display = 'none';
+                    }
+                };
+
+                container.appendChild(header);
+                container.appendChild(summaryDiv);
+                container.appendChild(list);
+            });
+        }
+
+        // --- 地图渲染函数 ---
+
+        function renderWorld() {
+            currentLevel = 'world';
+            updateBackButton(false);
+            myChart.showLoading({ text: '加载高精地图...', color: '#00dfff', maskColor: 'rgba(0,0,0,0.5)' });
+            $.getJSON(MAP_URLS.world, function (geo) {
+                myChart.hideLoading();
+                echarts.registerMap('world', geo);
+                let regions = [];
+                geo.features.forEach(f => {
+                    let name = f.properties.name;
+                    let count = new Set(travelData.filter(r => r.country === name).map(r => r.province)).size;
+                    let color = getHeatColor(count);
+                    if (color) regions.push({ name: name, itemStyle: { areaColor: color } });
+                });
+                myChart.setOption(getCommonOption('world', regions), true);
+                myChart.off('click');
+                myChart.on('click', params => {
+                    if (params.componentType === 'geo') {
+                        if (params.name === 'China') renderChina();
+                        else if (MAP_URLS[params.name]) renderForeign(params.name);
+                        else alert(`暂无 [${CN_MAP[params.name] || params.name}] 地图数据`);
+                    }
+                });
+            });
+        }
+
+        function renderChina() {
+            currentLevel = 'china';
+            currentScopeName = 'China';
+            updateBackButton(true, "← 返回世界", renderWorld);
+
+            myChart.showLoading();
+            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function (geo) {
+                myChart.hideLoading();
+                echarts.registerMap('china', geo);
+
+                let regions = [];
+                geo.features.forEach(f => {
+                    let pName = f.properties.name;
+
+                    // 1. 计算热力图颜色
+                    let count = new Set(travelData.filter(r => r.country === 'China' && r.province === pName).map(r => r.city)).size;
+                    let color = getHeatColor(count); // 获取原来的黄色/深黄色
+
+                    // 2. Base地优先着色逻辑 (橙色)
+                    // 如果这个省/直辖市的名字在 Base列表中 (例如 '上海市')，强制覆盖为橙色
+                    if (baseCities.includes(pName)) {
+                        color = '#FF8C00'; // 橙色
+                    }
+
+                    if (color) regions.push({ name: pName, itemStyle: { areaColor: color } });
+                });
+
+                myChart.setOption(getCommonOption('china', regions), true);
+
+                myChart.off('click');
+                myChart.on('click', params => {
+                    if (params.componentType === 'geo') {
+                        // --- 修改：增加禁止下钻判断 ---
+                        if (NO_DRILL_LIST.includes(params.name)) {
+                            // 如果是直辖市或港澳，不进入下一级，直接当作点击事件处理（录入足迹）
+                            // 模拟点击坐标转换
+                            let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
+                            // 手动触发录入弹窗，省份和城市都填同一个名字
+                            openDirectCityModal('China', params.name, coord);
+                        } else {
+                            // 正常下钻逻辑
+                            let code = CHINA_PROVINCES[params.name];
+                            if (code) renderProvince(params.name, code);
+                        }
+                    }
+                });
+            });
+        }
+
+        // --- 新增：数据导出 (下载 JSON) ---
+        function exportData() {
+            if (travelData.length === 0 && userTags.length === 0 && baseCities.length === 0) {
+                alert("暂无数据可备份");
+                return;
+            }
+
+            // 打包所有数据
+            const backupObj = {
+                version: "3.1",
+                timestamp: new Date().toLocaleString(),
+                data: travelData,
+                tags: userTags,
+                bases: baseCities
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            // 文件名带上日期
+            const dateStr = new Date().toISOString().slice(0, 10);
+            downloadAnchorNode.setAttribute("download", `travel_map_backup_${dateStr}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // --- 新增：数据导入 (读取 JSON) ---
+        function importData(inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+
+                    // 简单的格式校验
+                    if (!json.data || !json.tags) {
+                        throw new Error("文件格式不正确");
+                    }
+
+                    if (!confirm(`检测到备份文件：\n时间：${json.timestamp}\n记录数：${json.data.length}\n\n确定要覆盖当前所有数据吗？此操作不可撤销！`)) {
+                        inputElement.value = ''; // 清空选择
+                        return;
+                    }
+
+                    // 覆盖本地数据
+                    travelData = json.data;
+                    userTags = json.tags;
+                    // 兼容旧版本可能没有 bases 的情况
+                    baseCities = json.bases || [];
+
+                    // 写入 LocalStorage
+                    localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
+                    localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
+                    localStorage.setItem('travel_map_bases_list', JSON.stringify(baseCities)); // 注意这里要用你代码里定义的 BASE_KEY
+
+                    alert("数据恢复成功！页面将刷新。");
+                    location.reload(); // 刷新页面以重新加载数据
+
+                } catch (err) {
+                    alert("导入失败：文件损坏或格式错误。\n" + err.message);
                 }
             };
-            container.appendChild(header); container.appendChild(summaryDiv); container.appendChild(list);
-        });
-    }
-
-    // --- 地图渲染 ---
-    function getCommonOption(mapName, regions, series = []) {
-        const isWorld = mapName === 'world';
-        return {
-            backgroundColor: 'rgba(0,0,0,0)',
-            tooltip: {
-                trigger: 'item', backgroundColor: 'rgba(0,10,20,0.9)', borderColor: '#00dfff', textStyle: { color: '#fff' },
-                formatter: params => {
-                    if (params.componentType === 'series') {
-                        const d = params.data.custom;
-                        let tagsStr = d.tags && d.tags.length ? `<br>标签: <span style="color:#00dfff">${d.tags.join(', ')}</span>` : '';
-                        return `<b>${params.data.name}</b><br>${d.date}${tagsStr}<br>${d.note}`;
-                    }
-                    return CN_MAP[params.name] || params.name;
-                }
-            },
-            geo: {
-                map: mapName, roam: true, aspectScale: 0.75, layoutCenter: ['50%', '50%'], layoutSize: '100%',
-                label: { show: true, color: '#fff', fontSize: 10, textShadowColor: '#000', textShadowBlur: 2, formatter: p => isWorld ? (CN_MAP[p.name] ? CN_MAP[p.name] : "") : p.name },
-                itemStyle: { areaColor: '#1a2b3c', borderColor: '#4facfe', borderWidth: 0.6, shadowColor: 'rgba(0, 223, 255, 0.4)', shadowBlur: 10 },
-                emphasis: { itemStyle: { areaColor: '#00dfff', shadowBlur: 20 }, label: { show: true, color: '#000' } },
-                select: { disabled: true }, regions: regions
-            },
-            series: series
-        };
-    }
-
-    function renderWorld() {
-        currentLevel = 'world'; updateBackButton(false);
-        myChart.clear(); myChart.showLoading({ text: '加载世界地图...', color: '#00dfff', maskColor: 'rgba(0,0,0,0.5)' });
-        $.getJSON(MAP_URLS.world, function(geo) {
-            myChart.hideLoading(); echarts.registerMap('world', geo);
-            let regions = [];
-            geo.features.forEach(f => {
-                let name = f.properties.name;
-                let count = new Set(travelData.filter(r => r.country === name).map(r => r.province)).size;
-                let color = getHeatColor(count);
-                if (color) regions.push({ name: name, itemStyle: { areaColor: color } });
-            });
-            myChart.setOption(getCommonOption('world', regions), true);
-            myChart.off('click');
-            myChart.on('click', params => {
-                if (params.componentType === 'geo') {
-                    if (params.name === 'China') renderChina();
-                    else if (MAP_URLS[params.name]) renderForeign(params.name);
-                    else alert(`暂无 [${CN_MAP[params.name]||params.name}] 地图数据`);
-                }
-            });
-        });
-    }
-
-    function renderChina() {
-        currentLevel = 'china'; currentScopeName = 'China'; updateBackButton(true, "← 返回世界", renderWorld);
-        myChart.showLoading();
-        $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function(geo) {
-            myChart.hideLoading(); echarts.registerMap('china', geo);
-            let regions = [];
-            geo.features.forEach(f => {
-                let pName = f.properties.name;
-                let count = new Set(travelData.filter(r => r.country === 'China' && r.province === pName).map(r => r.city)).size;
-                let color = getHeatColor(count);
-                if (baseCities.includes(pName)) color = '#FF8C00';
-                if(color) regions.push({ name: pName, itemStyle: { areaColor: color } });
-            });
-            myChart.setOption(getCommonOption('china', regions), true);
-            myChart.off('click');
-            myChart.on('click', params => {
-                if (params.componentType === 'geo') {
-                    if (NO_DRILL_LIST.includes(params.name)) {
-                        let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
-                        openDirectCityModal('China', params.name, coord);
-                    } else {
-                        let code = CHINA_PROVINCES[params.name];
-                        if(code) renderProvince(params.name, code);
-                    }
-                }
-            });
-        });
-    }
-
-    function renderProvince(pName, adcode) {
-        currentLevel = 'province'; currentScopeName = pName; updateBackButton(true, "← 返回中国", renderChina);
-        myChart.showLoading();
-        $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, function(geo) {
-            myChart.hideLoading(); echarts.registerMap(pName, geo);
-            let regions = []; let points = [];
-            geo.features.forEach(f => {
-                let city = f.properties.name;
-                let itemStyle = null;
-                if (baseCities.includes(city)) itemStyle = { areaColor: '#FF8C00', shadowBlur: 10, shadowColor: '#FF8C00' };
-                let recs = travelData.filter(r => r.country === 'China' && r.province === pName && r.city === city);
-                if (recs.length > 0) {
-                    if (!itemStyle) itemStyle = { areaColor: '#FFD700', shadowBlur: 10, shadowColor: '#FFD700' };
-                    recs.forEach(r => points.push({ name: r.city, value: [r.lng, r.lat], custom: r }));
-                }
-                if (itemStyle) regions.push({ name: city, itemStyle: itemStyle });
-            });
-            let series = [{ type: 'scatter', coordinateSystem: 'geo', data: points, symbol: 'circle', symbolSize: 12, itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' } }];
-            myChart.setOption(getCommonOption(pName, regions, series), true);
-            setupClickEvent('China', pName);
-        });
-    }
-
-    function renderForeign(cName) {
-        currentLevel = 'foreign'; currentScopeName = cName; updateBackButton(true, "← 返回世界", renderWorld);
-        myChart.showLoading();
-        $.getJSON(MAP_URLS[cName], function(geo) {
-            myChart.hideLoading(); echarts.registerMap(cName, geo);
-            let regions = []; let points = [];
-            geo.features.forEach(f => {
-                let state = f.properties.name;
-                let recs = travelData.filter(r => r.country === cName && r.province === state);
-                if (recs.length > 0) {
-                    regions.push({ name: state, itemStyle: { areaColor: 'rgba(255, 215, 0, 0.4)' } });
-                    recs.forEach(r => points.push({ name: r.province, value: [r.lng, r.lat], custom: r }));
-                }
-            });
-            let series = [{ type: 'scatter', coordinateSystem: 'geo', data: points, symbol: 'circle', symbolSize: 12, itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' } }];
-            myChart.setOption(getCommonOption(cName, regions, series), true);
-            setupClickEvent(cName, null);
-        });
-    }
-
-    // 辅助
-    function openDirectCityModal(country, cityName, coord) {
-        tempClickData = { country: country, province: cityName, city: cityName, lng: coord[0], lat: coord[1] };
-        document.getElementById('loc-display').value = `${CN_MAP[country]} ${cityName}`;
-        document.getElementById('input-date').valueAsDate = new Date();
-        document.getElementById('input-days').value = 1;
-        document.getElementById('input-note').value = '';
-        document.getElementById('input-distance').value = ''; document.getElementById('input-climb').value = ''; 
-        document.getElementById('input-dives').value = ''; document.getElementById('input-ski-dist').value = '';
-        document.getElementById('data-hike-run').classList.remove('active'); document.getElementById('data-dive').classList.remove('active'); document.getElementById('data-ski').classList.remove('active');
-        editingIndex = null; document.getElementById('btn-delete').style.display = 'none';
-        const tagArea = document.getElementById('tag-selector-area'); tagArea.innerHTML = '';
-        userTags.forEach(tag => {
-            let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
-            span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
-            tagArea.appendChild(span);
-        });
-        document.getElementById('modal-mask').style.display = 'flex';
-    }
-
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-    function toggleEditMode() { document.getElementById('sidebar').classList.toggle('edit-mode'); document.querySelector('.sidebar-edit-toggle').classList.toggle('active'); }
-    function closeModal() { document.getElementById('modal-mask').style.display = 'none'; }
-    function updateBackButton(show, text, handler) { const btn = document.getElementById('nav-back-btn'); if (show) { btn.style.display = 'flex'; btn.innerText = text; btn.onclick = handler; } else { btn.style.display = 'none'; } }
-    function getHeatColor(count) { if(count >= 3) return 'rgba(255, 215, 0, 1.0)'; if(count === 2) return 'rgba(255, 215, 0, 0.6)'; if(count === 1) return 'rgba(255, 215, 0, 0.3)'; return null; }
-    function updateStats() { document.getElementById('count-country').innerText = new Set(travelData.map(r => r.country)).size; document.getElementById('count-total').innerText = travelData.length; }
-
-    function openTagManager() {
-        const listDiv = document.getElementById('manage-tag-list'); listDiv.innerHTML = '';
-        userTags.forEach((tag, index) => {
-            let item = document.createElement('div'); item.className = 'manage-tag-item';
-            item.innerHTML = `<span>${tag}</span> <span class="btn-del-tag" onclick="deleteTag(${index})">删除</span>`;
-            listDiv.appendChild(item);
-        });
-        document.getElementById('tag-manager-mask').style.display = 'flex';
-    }
-    function closeTagManager() { document.getElementById('tag-manager-mask').style.display = 'none'; }
-    function addNewTag() { const val = document.getElementById('new-tag-name').value.trim(); if(val && !userTags.includes(val)) { userTags.push(val); localStorage.setItem(TAGS_KEY, JSON.stringify(userTags)); saveToCloud(); document.getElementById('new-tag-name').value = ''; openTagManager(); } }
-    function deleteTag(index) { if(confirm('删除此标签？')) { userTags.splice(index, 1); localStorage.setItem(TAGS_KEY, JSON.stringify(userTags)); saveToCloud(); openTagManager(); } }
-
-    function openBaseManager() {
-        const listDiv = document.getElementById('manage-base-list'); listDiv.innerHTML = '';
-        baseCities.forEach((city, index) => {
-            let item = document.createElement('div'); item.className = 'manage-tag-item';
-            item.innerHTML = `<span style="color:#FF8C00">${city}</span> <span class="btn-del-tag" onclick="deleteBase(${index})">删除</span>`;
-            listDiv.appendChild(item);
-        });
-        document.getElementById('base-manager-mask').style.display = 'flex';
-    }
-    function closeBaseManager() { document.getElementById('base-manager-mask').style.display = 'none'; if(currentLevel==='china') renderChina(); else if(currentLevel==='province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]); }
-    function addNewBase() { const val = document.getElementById('new-base-name').value.trim(); if(val && !baseCities.includes(val)) { baseCities.push(val); localStorage.setItem(BASE_KEY, JSON.stringify(baseCities)); saveToCloud(); document.getElementById('new-base-name').value = ''; openBaseManager(); } }
-    function deleteBase(index) { if(confirm('移除此Base地？')) { baseCities.splice(index, 1); localStorage.setItem(BASE_KEY, JSON.stringify(baseCities)); saveToCloud(); openBaseManager(); } }
-
-    // 启动
-    window.addEventListener('resize', () => myChart.resize());
-    // 检测登录
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-            currentUser = session.user;
-            initCloudData();
-        } else {
-            // 未登录先渲染离线数据
-            renderWorld(); updateLogSidebar(); updateStats();
-            // 延时弹出登录，避免视觉突兀
-            setTimeout(() => document.getElementById('login-mask').style.display = 'flex', 500);
+            reader.readAsText(file);
         }
-    });
 
-</script>
+        // --- 新增：专门处理直辖市/港澳点击录入的函数 ---
+        function openDirectCityModal(country, cityName, coord) {
+            tempClickData = {
+                country: country,
+                province: cityName, // 直辖市省份即自身
+                city: cityName,     // 城市也存自身，或者留空，视个人习惯。这里存自身方便显示
+                lng: coord[0], lat: coord[1]
+            };
+
+            let loc = `${CN_MAP[country]} ${cityName}`;
+            document.getElementById('loc-display').value = loc;
+            document.getElementById('input-date').valueAsDate = new Date();
+            document.getElementById('input-days').value = 1;
+            document.getElementById('input-note').value = '';
+
+            // 重置编辑状态
+            editingIndex = null;
+            document.getElementById('btn-delete').style.display = 'none';
+
+            // 生成标签
+            const tagArea = document.getElementById('tag-selector-area');
+            tagArea.innerHTML = '';
+            userTags.forEach(tag => {
+                let span = document.createElement('span');
+                span.className = 'tag-option';
+                span.innerText = tag;
+                span.onclick = function () { this.classList.toggle('selected'); };
+                tagArea.appendChild(span);
+            });
+
+            document.getElementById('modal-mask').style.display = 'block';
+        }
+
+        function renderProvince(pName, adcode) {
+            currentLevel = 'province';
+            currentScopeName = pName;
+            updateBackButton(true, "← 返回中国", renderChina);
+
+            myChart.showLoading();
+            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, function (geo) {
+                myChart.hideLoading();
+                echarts.registerMap(pName, geo);
+
+                let regions = [];
+                let points = [];
+
+                geo.features.forEach(f => {
+                    let city = f.properties.name;
+
+                    // Base地着色逻辑 ---
+                    // 默认样式
+                    let itemStyle = null;
+
+                    // 如果是 Base 地，底色设为橙色
+                    if (baseCities.includes(city)) {
+                        itemStyle = {
+                            areaColor: '#FF8C00', // Base 橙色
+                            shadowBlur: 10, shadowColor: '#FF8C00'
+                        };
+                    }
+
+                    // 检查足迹记录 (逻辑：Base地背景优先，足迹点依然显示)
+                    let recs = travelData.filter(r => r.country === 'China' && r.province === pName && r.city === city);
+                    if (recs.length > 0) {
+                        // 如果不是Base地，才应用去过的亮黄色；如果是Base地，保持橙色
+                        if (!itemStyle) {
+                            itemStyle = { areaColor: '#FFD700', shadowBlur: 10, shadowColor: '#FFD700' };
+                        }
+                        recs.forEach(r => points.push({ name: r.city, value: [r.lng, r.lat], custom: r }));
+                    }
+
+                    if (itemStyle) {
+                        regions.push({ name: city, itemStyle: itemStyle });
+                    }
+                });
+
+                let series = [{
+                    type: 'scatter', coordinateSystem: 'geo', data: points,
+                    symbol: 'circle', symbolSize: 12,
+                    itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor: '#fff' }
+                }];
+                let opt = getCommonOption(pName, regions, series);
+                opt.geo.label.show = true; // 强制显示标签
+                myChart.setOption(opt, true);
+
+                setupClickEvent('China', pName);
+            });
+        }
+
+        function renderForeign(cName) {
+            currentLevel = 'foreign';
+            currentScopeName = cName;
+            updateBackButton(true, "← 返回世界", renderWorld);
+            myChart.showLoading();
+            $.getJSON(MAP_URLS[cName], function (geo) {
+                myChart.hideLoading();
+                echarts.registerMap(cName, geo);
+                let regions = [];
+                let points = [];
+                geo.features.forEach(f => {
+                    let state = f.properties.name;
+                    let recs = travelData.filter(r => r.country === cName && r.province === state);
+                    if (recs.length > 0) {
+                        regions.push({ name: state, itemStyle: { areaColor: 'rgba(255, 215, 0, 0.4)' } });
+                        recs.forEach(r => points.push({ name: r.province, value: [r.lng, r.lat], custom: r }));
+                    }
+                });
+                let series = [{
+                    type: 'scatter', coordinateSystem: 'geo', data: points,
+                    symbol: 'circle', symbolSize: 12,
+                    itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor: '#fff' }
+                }];
+                myChart.setOption(getCommonOption(cName, regions, series), true);
+                setupClickEvent(cName, null);
+            });
+        }
+
+        // --- 辅助功能 ---
+        function updateBackButton(show, text, handler) {
+            const btn = document.getElementById('nav-back-btn');
+            if (show) {
+                btn.style.display = 'block';
+                btn.innerText = text;
+                btn.onclick = handler;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+        function getHeatColor(count) {
+            if (count >= 3) return 'rgba(255, 215, 0, 1.0)';
+            if (count === 2) return 'rgba(255, 215, 0, 0.6)';
+            if (count === 1) return 'rgba(255, 215, 0, 0.3)';
+            return null;
+        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        // --- 新增：切换编辑模式 ---
+        function toggleEditMode() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.sidebar-edit-toggle');
+
+            // 切换 sidebar 的 class
+            sidebar.classList.toggle('edit-mode');
+
+            // 切换按钮自身的激活样式（高亮显示，提示当前处于编辑状态）
+            toggleBtn.classList.toggle('active');
+        }
+        function updateStats() {
+            document.getElementById('count-country').innerText = new Set(travelData.map(r => r.country)).size;
+            document.getElementById('count-total').innerText = travelData.length;
+        }
+
+        // --- 新增：背景光晕跟随鼠标逻辑 ---
+        document.addEventListener('mousemove', function (e) {
+            const cursorGlow = document.getElementById('cursor-glow');
+            if (cursorGlow) {
+                // 使用 transform 移动，性能更好
+                cursorGlow.style.left = e.clientX + 'px';
+                cursorGlow.style.top = e.clientY + 'px';
+            }
+        });
+
+        // 启动
+        window.addEventListener('resize', () => myChart.resize());
+        // 检测登录
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                currentUser = session.user;
+                initCloudData();
+            } else {
+                // 未登录先渲染离线数据
+                renderWorld(); updateLogSidebar(); updateStats();
+                // 延时弹出登录，避免视觉突兀
+                setTimeout(() => document.getElementById('login-mask').style.display = 'flex', 500);
+            }
+        });
+
+    </script>
 </body>
 </html>
-
