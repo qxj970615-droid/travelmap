@@ -197,9 +197,13 @@
                 <div style="width:80px;"><label>天数</label><input type="number" id="input-days" value="1" min="1" style="text-align:center;"></div>
             </div>
             <div class="form-item"><label>选择标签 (多选)</label><div class="tag-selector-container" id="tag-selector-area"></div></div>
-            <div id="data-hike-run" class="dynamic-data-row"><div class="dynamic-input-group"><label>📏 距离(km)</label><input type="number" id="input-distance" step="0.1"></div><div class="dynamic-input-group"><label>⛰️ 爬升(m)</label><input type="number" id="input-climb"></div></div>
-            <div id="data-dive" class="dynamic-data-row"><div class="dynamic-input-group"><label>🤿 气瓶数</label><input type="number" id="input-dives"></div></div>
-            <div id="data-ski" class="dynamic-data-row"><div class="dynamic-input-group"><label>⛷️ 滑雪里程(km)</label><input type="number" id="input-ski-dist" step="0.1"></div></div>
+            <div id="data-hike-run" class="dynamic-data-row">
+                <div class="dynamic-input-group"><label>📏 距离(km)</label><input type="number" id="input-distance" step="0.1"></div>
+                <div class="dynamic-input-group"><label>⛰️ 爬升(m)</label><input type="number" id="input-climb"></div></div>
+            <div id="data-dive" class="dynamic-data-row">
+                <div class="dynamic-input-group"><label>🤿 气瓶数</label><input type="number" id="input-dives"></div></div>
+            <div id="data-ski" class="dynamic-data-row"
+                ><div class="dynamic-input-group"><label>⛷️ 滑雪里程(km)</label><input type="number" id="input-ski-dist" step="0.1"></div></div>
             <div class="form-item"><label>备注</label><textarea id="input-note" rows="2"></textarea></div>
             <div class="modal-btns">
                 <button id="btn-delete" class="btn-cancel" style="float:left; border-color:#ff4444; color:#ff4444;" onclick="deleteRecord()">删除</button>
@@ -245,7 +249,7 @@
     const BASE_KEY = 'travel_map_bases_list';
 
     let travelData = JSON.parse(localStorage.getItem(DATA_KEY)) || [];
-    let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['越野跑', '滑雪', '徒步', '潜水', '观星', '摄影', '自驾', '美食', '博物馆'];
+    let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['越野跑', '越野跑训练', '滑雪', '徒步', '潜水', '观星', '摄影', '骑行', '中转', '纯玩', '自驾', '美食', '博物馆'];
     let baseCities = JSON.parse(localStorage.getItem(BASE_KEY)) || [];
     let editingIndex = null;
     let tempClickData = null;
@@ -253,10 +257,66 @@
     let currentScopeName = '';
 
     // 字典
-    const CN_MAP = {'China':'中国','United States':'美国','Russia':'俄罗斯','Japan':'日本','Australia':'澳大利亚','Canada':'加拿大','United Kingdom':'英国','France':'法国','Germany':'德国','Italy':'意大利','Spain':'西班牙','South Korea':'韩国','North Korea':'朝鲜','India':'印度','Thailand':'泰国','Philippines':'菲律宾','Indonesia':'印度尼西亚','Malaysia':'马来西亚','Vietnam':'越南','Singapore':'新加坡','Cambodia':'柬埔寨','Laos':'老挝','Myanmar':'缅甸','Brazil':'巴西','Argentina':'阿根廷','Mexico':'墨西哥','Egypt':'埃及','South Africa':'南非','Turkey':'土耳其','Netherlands':'荷兰','Switzerland':'瑞士','Sweden':'瑞典','Norway':'挪威','Finland':'芬兰','Denmark':'丹麦','New Zealand':'新西兰','United Arab Emirates':'阿联酋','Saudi Arabia':'沙特阿拉伯','Portugal':'葡萄牙','Greece':'希腊','Austria':'奥地利','Hungary':'匈牙利','Czech Republic':'捷克','Oman':'阿曼','Jordan':'约旦','Iran':'伊朗','Kazakhstan':'哈萨克斯坦','Uzbekistan':'乌兹别克斯坦','Armenia':'亚美尼亚','Azerbaijan':'阿塞拜疆','Georgia':'格鲁吉亚','Maldives':'马尔代夫','Ethiopia':'埃塞俄比亚','Tanzania':'坦桑尼亚','Kenya':'肯尼亚','Rwanda':'卢旺达','Nepal':'尼泊尔'};
-    const COUNTRY_ISO = {'China':'cn','United States':'us','Russia':'ru','Japan':'jp','Australia':'au','Canada':'ca','United Kingdom':'gb','France':'fr','Germany':'de','Italy':'it','Spain':'es','South Korea':'kr','Thailand':'th','Philippines':'ph','Indonesia':'id','Malaysia':'my','Vietnam':'vn','Singapore':'sg','Brazil':'br','Argentina':'ar','Egypt':'eg','Turkey':'tr','Netherlands':'nl','Switzerland':'ch','Sweden':'se','New Zealand':'nz','Austria':'at','Hungary':'hu','Czech Republic':'cz','Oman':'om','Jordan':'jo','Iran':'ir','Kazakhstan':'kz','Uzbekistan':'uz','Maldives':'mv','Ethiopia':'et','Tanzania':'tz','Kenya':'ke','Rwanda':'rw','Nepal':'np'};
-    const MAP_URLS = { world: 'https://code.highcharts.com/mapdata/custom/world.geo.json','Thailand':'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json','Vietnam':'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json','Malaysia':'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json','Indonesia':'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json','Philippines':'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json','United States':'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json','Japan':'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json','United Kingdom':'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json','France':'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json','Germany':'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json','Italy':'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json','Spain':'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json','Russia':'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json','Australia':'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json','Canada':'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json','Switzerland':'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json','Turkey':'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json','Egypt':'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json','New Zealand':'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json','South Korea':'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json','Hungary':'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json','Czech Republic':'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json','Austria':'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json','Oman':'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json','Jordan':'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json','Iran':'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json','Kazakhstan':'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json','Uzbekistan':'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json','Armenia':'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json','Azerbaijan':'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json','Georgia':'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json','Maldives':'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json','Ethiopia':'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json','Tanzania':'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json','Kenya':'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json','Rwanda':'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json','Nepal':'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json' };
-    const CHINA_PROVINCES = {'China':100000,'北京市':110000,'天津市':120000,'河北省':130000,'山西省':140000,'内蒙古自治区':150000,'辽宁省':210000,'吉林省':220000,'黑龙江省':230000,'上海市':310000,'江苏省':320000,'浙江省':330000,'安徽省':340000,'福建省':350000,'江西省':360000,'山东省':370000,'河南省':410000,'湖北省':420000,'湖南省':430000,'广东省':440000,'广西壮族自治区':450000,'海南省':460000,'重庆市':500000,'四川省':510000,'贵州省':520000,'云南省':530000,'西藏自治区':540000,'陕西省':610000,'甘肃省':620000,'青海省':630000,'宁夏回族自治区':640000,'新疆维吾尔自治区':650000,'台湾省':710000,'香港特别行政区':810000,'澳门特别行政区':820000};
+    const CN_MAP = {'China':'中国','United States':'美国','Russia':'俄罗斯','Japan':'日本','Australia':'澳大利亚','Canada':'加拿大',
+                    'United Kingdom':'英国','France':'法国','Germany':'德国','Italy':'意大利','Spain':'西班牙','South Korea':'韩国',
+                    'North Korea':'朝鲜','India':'印度','Thailand':'泰国','Philippines':'菲律宾','Indonesia':'印度尼西亚','Malaysia':'马来西亚',
+                    'Vietnam':'越南','Singapore':'新加坡','Cambodia':'柬埔寨','Laos':'老挝','Myanmar':'缅甸','Brazil':'巴西','Argentina':'阿根廷',
+                    'Mexico':'墨西哥','Egypt':'埃及','South Africa':'南非','Turkey':'土耳其','Netherlands':'荷兰','Switzerland':'瑞士','Sweden':'瑞典',
+                    'Norway':'挪威','Finland':'芬兰','Denmark':'丹麦','New Zealand':'新西兰','United Arab Emirates':'阿联酋','Saudi Arabia':'沙特阿拉伯',
+                    'Portugal':'葡萄牙','Greece':'希腊','Austria':'奥地利','Hungary':'匈牙利','Czech Republic':'捷克','Oman':'阿曼','Jordan':'约旦',
+                    'Iran':'伊朗','Kazakhstan':'哈萨克斯坦','Uzbekistan':'乌兹别克斯坦','Armenia':'亚美尼亚','Azerbaijan':'阿塞拜疆','Georgia':'格鲁吉亚',
+                    'Maldives':'马尔代夫','Ethiopia':'埃塞俄比亚','Tanzania':'坦桑尼亚','Kenya':'肯尼亚','Rwanda':'卢旺达','Nepal':'尼泊尔'};
+    
+    const COUNTRY_ISO = {'China':'cn','United States':'us','Russia':'ru','Japan':'jp','Australia':'au','Canada':'ca','United Kingdom':'gb',
+                         'France':'fr','Germany':'de','Italy':'it','Spain':'es','South Korea':'kr','Thailand':'th','Philippines':'ph',
+                         'Indonesia':'id','Malaysia':'my','Vietnam':'vn','Singapore':'sg','Brazil':'br','Argentina':'ar','Egypt':'eg',
+                         'Turkey':'tr','Netherlands':'nl','Switzerland':'ch','Sweden':'se','New Zealand':'nz','Austria':'at','Hungary':'hu',
+                         'Czech Republic':'cz','Oman':'om','Jordan':'jo','Iran':'ir','Kazakhstan':'kz','Uzbekistan':'uz','Maldives':'mv',
+                         'Ethiopia':'et','Tanzania':'tz','Kenya':'ke','Rwanda':'rw','Nepal':'np'};
+    
+    const MAP_URLS = { world: 'https://code.highcharts.com/mapdata/custom/world-highres.geo.json',
+                      'Thailand':'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json',
+                      'Vietnam':'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json',
+                      'Malaysia':'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json',
+                      'Indonesia':'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json',
+                      'Philippines':'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json',
+                      'United States':'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json',
+                      'Japan':'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json',
+                      'United Kingdom':'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json',
+                      'France':'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json',
+                      'Germany':'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json',
+                      'Italy':'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json',
+                      'Spain':'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json',
+                      'Russia':'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json',
+                      'Australia':'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json',
+                      'Canada':'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json',
+                      'Switzerland':'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json',
+                      'Turkey':'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json',
+                      'Egypt':'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json',
+                      'New Zealand':'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json',
+                      'South Korea':'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json',
+                      'Hungary':'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json',
+                      'Czech Republic':'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json',
+                      'Austria':'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json',
+                      'Oman':'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json',
+                      'Jordan':'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json',
+                      'Iran':'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json',
+                      'Kazakhstan':'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json',
+                      'Uzbekistan':'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json',
+                      'Armenia':'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json',
+                      'Azerbaijan':'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json',
+                      'Georgia':'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json',
+                      'Maldives':'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json',
+                      'Ethiopia':'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json',
+                      'Tanzania':'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json',
+                      'Kenya':'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json',
+                      'Rwanda':'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json',
+                      'Nepal':'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json' };
+    
+    const CHINA_PROVINCES = {'China':100000,'北京市':110000,'天津市':120000,'河北省':130000,'山西省':140000,'内蒙古自治区':150000,'辽宁省':210000,'吉林省':220000,'黑龙江省':230000,
+                             '上海市':310000,'江苏省':320000,'浙江省':330000,'安徽省':340000,'福建省':350000,'江西省':360000,'山东省':370000,'河南省':410000,'湖北省':420000,
+                             '湖南省':430000,'广东省':440000,'广西壮族自治区':450000,'海南省':460000,'重庆市':500000,'四川省':510000,'贵州省':520000,'云南省':530000,
+                             '西藏自治区':540000,'陕西省':610000,'甘肃省':620000,'青海省':630000,'宁夏回族自治区':640000,'新疆维吾尔自治区':650000,'台湾省':710000,'香港特别行政区':810000,'澳门特别行政区':820000};
     const NO_DRILL_LIST = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
 
     // --- 认证与同步逻辑 ---
@@ -461,15 +521,43 @@
                 let bgUrl = ''; let borderColor = '';
                 if (r.tags && r.tags.length > 0) {
                     const t = r.tags.join(',');
-                    if (t.includes('越野跑')) { bgUrl = 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=400'; borderColor = '#ffaa00'; }
-                    else if (t.includes('滑雪')) { bgUrl = 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400'; borderColor = '#00dfff'; }
-                    else if (t.includes('潜水')) { bgUrl = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400'; borderColor = '#0055ff'; }
-                    else if (t.includes('观星')) { bgUrl = 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400'; borderColor = '#9933ff'; }
-                    else if (t.includes('徒步')) { bgUrl = 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400'; borderColor = '#50c878'; }
-                    else if (t.includes('摄影')) { bgUrl = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400'; borderColor = '#ccc'; }
-                    else if (t.includes('自驾')) { bgUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400'; borderColor = '#FFD700'; }
-                    else if (t.includes('美食')) { bgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400'; borderColor = '#ff4444'; }
-                    else if (t.includes('博物馆')) { bgUrl = 'https://images.unsplash.com/photo-1565060169389-758fa716283b?q=80&w=400'; borderColor = '#eebb44'; }
+                   if (t.includes('越野跑')) { // 包含"越野跑"或"越野跑训练"
+    bgUrl = 'https://images.unsplash.com/photo-1504025468847-0e438279542c?q=80&w=400';
+    borderColor = '#ffaa00';  // 橙色
+} else if (t.includes('滑雪')) {
+    bgUrl = 'https://images.unsplash.com/photo-1511880200544-0170efd77eff?q=80&w=400';
+    borderColor = '#00dfff'; // 冰蓝
+} else if (t.includes('潜水')) {
+    bgUrl = 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400';
+    borderColor = '#0055ff'; // 深蓝
+} else if (t.includes('观星')) {
+    bgUrl = 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400';
+    borderColor = '#9933ff'; // 紫色
+} else if (t.includes('徒步')) {
+    bgUrl = 'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400';
+    borderColor = '#50c878'; // 绿色
+} else if (t.includes('摄影')) {
+    bgUrl = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400';
+    borderColor = '#ccc'; // 银灰
+} else if (t.includes('自驾')) {
+    bgUrl = 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400';
+    borderColor = '#FFD700'; // 金黄
+} else if (t.includes('美食')) {
+    bgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400';
+    borderColor = '#ff4444'; // 红色
+} else if (t.includes('中转')) {
+    bgUrl = 'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
+    borderColor = '#708090'; // 石板灰
+} else if (t.includes('纯玩')) {
+    bgUrl = 'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
+    borderColor = '#FFE4E1'; // 薄雾玫瑰
+} else if (t.includes('骑行')) {
+    bgUrl = 'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
+    borderColor = '#BDB76B'; // 
+} else if (t.includes('博物馆')) {
+    bgUrl = 'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
+    borderColor = '#eebb44'; // 古典金/琥珀色
+}
                 }
                 if (borderColor) div.style.borderLeftColor = borderColor;
 
@@ -489,24 +577,24 @@
                 let flagImg = iso ? `<img src="https://flagcdn.com/w40/${iso}.png" class="flag-icon">` : '';
                 let bgDiv = bgUrl ? `<div class="rec-bg-img" style="background-image: url('${bgUrl}');"></div>` : '';
 
-                div.innerHTML = `
-                    ${bgDiv}
-                    <div class="rec-content">
-                        <div class="rec-top">
-                            <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
-                            <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
-                        </div>
-                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                            <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
-                            <div class="rec-tags">${tagsHtml}</div>
-                        </div>
-                        ${statsHtml}
-                        ${noteHtml}
-                    </div>
-                    <span class="rec-days">${r.days || 1}d</span>
-                `;
-                list.appendChild(div);
-            });
+                   div.innerHTML = `
+        ${bgDiv}
+        <div class="rec-content">
+            <div class="rec-top">
+                <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
+                <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+            </div>
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                <div class="rec-tags">${tagsHtml}</div>
+            </div>
+            ${statsHtml}
+            ${noteHtml}
+        </div>
+        <span class="rec-days">${r.days || 1}天</span>
+    `;
+    list.appendChild(div);
+});
 
             header.onclick = function() {
                 const sumBox = summaryDiv.querySelector('.year-summary-box');
@@ -714,3 +802,4 @@
 </script>
 </body>
 </html>
+
