@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的足迹地图 - 最终完整版</title>
+    <title>我的足迹 - 云端同步版</title>
+    <!-- 引入 ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- 引入 jQuery -->
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 引入 Supabase SDK (核心) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* --- 1. 背景升级：极光 + 网格 --- */
+        /* --- 1. 背景与全局 --- */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #050a14;
@@ -17,46 +21,30 @@
         }
         .ambient-light {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background: 
-                radial-gradient(circle at 10% 20%, rgba(0, 223, 255, 0.08), transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(80, 50, 250, 0.08), transparent 40%);
+            background: radial-gradient(circle at 10% 20%, rgba(0, 223, 255, 0.08), transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(80, 50, 250, 0.08), transparent 40%);
             filter: blur(50px); pointer-events: none;
         }
         .grid-texture {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
             background-size: 60px 60px; pointer-events: none;
         }
-        /* 星空背景 (修复版：随机散落) */
         .stars {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
             background: transparent;
-            background-image: 
-                radial-gradient(2px 2px at 50px 100px, #ffffff, transparent),
-                radial-gradient(2px 2px at 350px 50px, #ffffff, transparent),
-                radial-gradient(2px 2px at 550px 500px, #ffffff, transparent),
-                radial-gradient(2px 2px at 150px 450px, #ffffff, transparent),
-                radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
-                radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
-            background-repeat: repeat;
-            background-size: 600px 600px;
+            background-image: radial-gradient(2px 2px at 50px 100px, #ffffff, transparent),
+                              radial-gradient(2px 2px at 350px 50px, #ffffff, transparent),
+                              radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent);
+            background-repeat: repeat; background-size: 600px 600px;
             animation: moveStars 150s linear infinite; opacity: 0.9; pointer-events: none;
         }
         @keyframes moveStars { from {transform: translateY(0);} to {transform: translateY(-1000px);} }
-        
         #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* --- 2. 左侧面板 --- */
-        .left-panel { position: absolute; top: 30px; left: 30px; z-index: 10; pointer-events: none; }
+        /* --- 2. UI 面板 --- */
+        .left-panel { position: absolute; top: 30px; left: 30px; z-index: 10; pointer-events: auto; } /* 确保 auto */
         .main-title h1 {
             margin: 0; font-size: 34px; letter-spacing: 2px;
             background: linear-gradient(135deg, #fff 0%, #00dfff 100%);
@@ -64,8 +52,7 @@
             text-shadow: 0 0 30px rgba(0, 223, 255, 0.4);
         }
         
-        /* 按钮组 */
-        .btn-group-left { margin-top: 20px; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+        .btn-group-left { margin-top: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
         .nav-btn, .tag-manage-btn {
             background: rgba(16, 30, 50, 0.6); backdrop-filter: blur(5px);
             border: 1px solid rgba(0, 223, 255, 0.3); color: #fff;
@@ -73,136 +60,21 @@
             transition: 0.3s; display: flex; align-items: center; gap: 5px;
         }
         .nav-btn:hover, .tag-manage-btn:hover {
-            background: rgba(0, 223, 255, 0.2); border-color: #00dfff;
-            box-shadow: 0 0 15px rgba(0, 223, 255, 0.3);
+            background: rgba(0, 223, 255, 0.2); border-color: #00dfff; box-shadow: 0 0 15px rgba(0, 223, 255, 0.3);
         }
 
-        /* --- 3. 侧边栏与卡片 --- */
-        .sidebar-btn {
-            position: absolute; top: 30px; right: 20px; z-index: 100;
-            width: 40px; height: 40px; background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s;
-        }
-        .sidebar-btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
-
-        .sidebar {
-            position: absolute; top: 0; right: 0; bottom: 0; width: 360px;
-            background: rgba(10, 16, 26, 0.95); backdrop-filter: blur(15px);
-            border-left: 1px solid rgba(255, 255, 255, 0.05);
-            transform: translateX(100%); transition: transform 0.4s ease;
-            z-index: 90; display: flex; flex-direction: column; padding-top: 80px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
-        }
-        .sidebar.open { transform: translateX(0); }
-        .sidebar-header {
-            padding: 0 20px 10px; font-size: 16px; color: #00dfff; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .sidebar-content { flex: 1; overflow-y: auto; padding: 10px 20px; }
-        
-        .year-header {
-            color: #fff; font-weight: bold; padding: 12px 5px; margin-top: 15px; font-size: 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer;
-            display: flex; justify-content: space-between; align-items: baseline;
-        }
-        .year-stats { font-size: 12px; color: #678; font-weight: normal; }
-
-        /* 统计小面板 */
-        .year-summary-box {
-            display: none; background: rgba(0, 0, 0, 0.4); margin: 0 5px 10px 5px; padding: 10px;
-            border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); font-size: 12px;
-            animation: slideDown 0.2s ease-out;
-        }
-        .summary-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); }
-        .summary-row:last-child { border-bottom: none; }
-        .sum-title { font-weight: bold; } .sum-data { font-family: monospace; color: #fff; }
-        .sum-hike { color: #50c878; } .sum-dive { color: #00dfff; } .sum-run { color: #ffaa00; }
-
-        /* 卡片样式 */
-        .record-list.hidden { display: none; }
-        .record-item {
-            position: relative; background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px;
-            padding: 12px 15px; margin-bottom: 12px; overflow: hidden;
-            transition: all 0.3s ease; border-left: 3px solid rgba(255,255,255,0.2);
-        }
-        .record-item:hover {
-            transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-            background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3);
-        }
-        .rec-bg-img {
-            position: absolute; top: 0; right: 0; width: 70%; height: 100%;
-            background-size: cover; background-position: center; opacity: 0.6; filter: grayscale(30%);
-            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 90%);
-            mask-image: linear-gradient(to right, transparent 0%, black 90%);
-            z-index: 0; transition: 0.5s;
-        }
-        .record-item:hover .rec-bg-img { opacity: 0.9; filter: grayscale(0%); transform: scale(1.05); }
-        
-        .rec-content { position: relative; z-index: 1; width: 100%; }
-        .rec-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .rec-place { font-size: 15px; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); display: flex; align-items: center;}
-        .flag-icon { width: 18px; height: 13px; margin-right: 6px; border-radius: 2px; box-shadow: 0 0 3px rgba(0,0,0,0.5); }
-        .rec-date { font-size: 12px; color: rgba(255,255,255,0.7); display: block; margin-bottom: 0; }
-        .rec-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-        .rec-tag-badge { 
-            padding: 1px 6px; border-radius: 4px; font-size: 10px;
-            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
-            color: #ddd; backdrop-filter: blur(2px);
-        }
-        .rec-days { position: absolute; bottom: 10px; right: 10px; font-size: 18px; font-weight: 900; color: rgba(255,255,255,0.2); z-index: 1; }
-
-        /* 编辑按钮 */
-        .sidebar-edit-toggle {
-            position: absolute; top: 80px; right: 20px; z-index: 100;
-            width: 40px; height: 40px; background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #aaa;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s;
-        }
-        .sidebar-edit-toggle.active { background: #00dfff; color: #000; border-color: #00dfff; }
-        .btn-edit-rec { display: none; cursor: pointer; color: #00dfff; margin-left: 10px; font-size: 14px; text-shadow: 0 0 5px black;}
-        .sidebar.edit-mode .btn-edit-rec { display: inline-block; }
-
-        /* 区域筛选按钮 */
-        .region-record-btn {
-            position: absolute; top: 130px; right: 20px; z-index: 100;
-            width: 40px; height: 40px; background: rgba(255, 165, 0, 0.15);
-            border: 1px solid #FFD700; border-radius: 50%; color: #FFD700;
-            display: none; align-items: center; justify-content: center; cursor: pointer; 
-            font-size: 18px; transition: 0.3s; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
-        }
-        .region-record-btn:hover { background: #FFD700; color: #000; box-shadow: 0 0 20px #FFD700; transform: scale(1.1); }
-
-        /* --- 4. 统计与图例 --- */
-        .stats-panel { position: absolute; top: 30px; right: 80px; z-index: 10; display: flex; gap: 15px; pointer-events: none; }
-        .stat-card {
-            background: rgba(16, 30, 50, 0.7); backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 20px; border-radius: 8px; text-align: center;
-        }
-        .stat-num { font-size: 24px; color: #FFD700; font-weight: bold; display: block; }
-        .stat-desc { font-size: 12px; color: #88aadd; }
-
-        .legend-box {
-            position: absolute; bottom: 30px; left: 30px; z-index: 10;
-            background: rgba(0,0,0,0.6); padding: 12px; border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
-        }
-        .legend-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 12px; color: #ccc; }
-        .color-dot { width: 10px; height: 10px; margin-right: 8px; border-radius: 2px; }
-
-        /* --- 5. 弹窗通用样式 --- */
-        .modal-mask, #modal-mask, #tag-manager-mask, #base-manager-mask { 
+        /* --- 3. 弹窗通用 (关键修复：默认隐藏) --- */
+        .modal-mask { 
             display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.8); z-index: 2000; backdrop-filter: blur(5px); 
+            justify-content: center; align-items: center; /* 居中 */
         }
         .modal {
-            background: rgba(20, 30, 45, 0.95); margin: 5% auto; padding: 25px; width: 380px;
+            background: rgba(20, 30, 45, 0.95); padding: 25px; width: 380px;
             border: 1px solid rgba(0, 223, 255, 0.3); border-radius: 12px; 
             box-shadow: 0 0 40px rgba(0, 223, 255, 0.2); color: #fff;
         }
         .form-item { margin-bottom: 15px; }
-        .form-item label { display: block; color: #8ab; font-size: 12px; margin-bottom: 5px; }
         .form-item input, .form-item textarea {
             width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #345;
             color: #fff; border-radius: 4px; box-sizing: border-box; outline: none;
@@ -210,45 +82,62 @@
         .modal-btns { text-align: right; margin-top: 20px; }
         .btn-ok { background: #00dfff; color: #000; border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-cancel { background: transparent; border: 1px solid #666; color: #ccc; padding: 6px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
-        .btn-del { float: left; background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 6px 15px; border-radius: 4px; cursor: pointer; display: none; }
 
-        /* 标签选择器 */
+        /* --- 4. 登录弹窗特有 --- */
+        #login-mask { display: flex; z-index: 3000; } /* 初始显示登录框 */
+
+        /* --- 其他组件样式 --- */
+        .stats-panel { position: absolute; top: 30px; right: 80px; z-index: 10; display: flex; gap: 15px; pointer-events: none; }
+        .stat-card { background: rgba(16, 30, 50, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 20px; border-radius: 8px; text-align: center; }
+        .stat-num { font-size: 24px; color: #FFD700; font-weight: bold; display: block; }
+        .stat-desc { font-size: 12px; color: #88aadd; }
+
+        .sidebar-btn { position: absolute; top: 30px; right: 20px; z-index: 100; width: 40px; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid #fff; border-radius: 8px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .sidebar { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; background: rgba(10, 16, 26, 0.95); transform: translateX(100%); transition: 0.4s; z-index: 90; display: flex; flex-direction: column; padding-top: 80px; border-left: 1px solid #334; }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 10px 20px; }
+        
+        .year-header { color: #fff; font-weight: bold; padding: 12px 5px; margin-top: 15px; border-bottom: 1px solid #334; cursor: pointer; display: flex; justify-content: space-between; }
+        .record-list.hidden { display: none; }
+        .record-item { background: rgba(255, 255, 255, 0.03); border: 1px solid #334; border-radius: 10px; padding: 12px 15px; margin-bottom: 12px; position: relative; overflow: hidden; border-left: 3px solid rgba(255,255,255,0.2); }
+        .rec-bg-img { position: absolute; top: 0; right: 0; width: 70%; height: 100%; background-size: cover; opacity: 0.6; filter: grayscale(30%); mask-image: linear-gradient(to right, transparent 0%, black 90%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 90%); z-index: 0; }
+        .rec-content { position: relative; z-index: 1; }
+        .rec-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .rec-place { font-weight: bold; color: #fff; }
+        .rec-date { font-size: 12px; color: #aaa; }
+        .rec-days { position: absolute; top: 10px; right: 10px; font-size: 18px; color: #FFD700; font-weight: bold; z-index: 2; }
+        .rec-tag-badge { font-size: 10px; color: #00dfff; border: 1px solid rgba(0,223,255,0.4); padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.5); margin-right: 4px; }
+        
         .tag-selector-container { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; }
-        .tag-option { padding: 4px 10px; border: 1px solid #445; border-radius: 15px; font-size: 12px; cursor: pointer; color: #aaa; transition: 0.2s; }
+        .tag-option { padding: 4px 10px; border: 1px solid #445; border-radius: 15px; font-size: 12px; cursor: pointer; color: #aaa; }
         .tag-option.selected { background: rgba(0, 223, 255, 0.2); border-color: #00dfff; color: #fff; }
         
-        /* 动态数据输入框 */
         .dynamic-data-row { display: none; gap: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; }
-        .dynamic-data-row.active { display: flex; animation: slideDown 0.3s; }
+        .dynamic-data-row.active { display: flex; }
         .dynamic-input-group { flex: 1; }
-        .dynamic-input-group label { color: #00dfff; font-size: 12px; display: block; margin-bottom: 4px;}
-        .dynamic-input-group input { text-align: center; color: #000 !important; background: #fff !important; font-weight: bold; border-radius: 4px;}
-
-        /* 管理列表 */
-        .tag-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tag-list-manage { max-height: 200px; overflow-y: auto; border: 1px solid #334; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.2); }
-        .manage-tag-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px dashed #334; font-size: 13px; }
-        .btn-del-tag { color: #ff4444; cursor: pointer; font-size: 12px; }
-
-        @keyframes slideDown { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
+        .dynamic-input-group input { text-align: center; color: #000 !important; background: #fff !important; font-weight: bold; }
+        
+        .manage-tag-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px dashed #334; font-size: 13px; }
     </style>
 </head>
 <body>
 
-    <!-- 背景特效 -->
     <div class="ambient-light"></div>
     <div class="grid-texture"></div>
     <div class="stars"></div>
 
-    <!-- 左侧面板 -->
     <div class="left-panel">
         <div class="main-title">
             <h1>我的足迹地图</h1>
-            <!-- 版本号 -->
-            <div style="position:relative; display:inline-block; margin-top:5px; pointer-events:auto;" class="version-container">
-                <div style="padding:2px 8px; border:1px solid #00dfff; border-radius:4px; color:#00dfff; font-size:11px; cursor:help; background:rgba(0,223,255,0.1);">V3.8 Stable</div>
-            </div>
+            <div style="font-size:11px; color:#00dfff; margin-top:5px; border:1px solid #00dfff; display:inline-block; padding:2px 8px; border-radius:4px;">V4.0 Cloud</div>
         </div>
+        
+        <!-- 用户状态 -->
+        <div id="user-status" style="margin-top:15px; margin-bottom:10px; font-size:12px; color:#00dfff; display:none;">
+            👤 <span id="user-email"></span> 
+            <a href="#" onclick="handleLogout()" style="color:#888; margin-left:5px;">[退出]</a>
+        </div>
+
         <div class="btn-group-left">
             <button id="nav-back-btn" class="nav-btn" style="display:none;">← 返回</button>
             <div style="display:flex; gap:10px;">
@@ -264,96 +153,21 @@
         </div>
     </div>
 
-    <!-- 统计 -->
     <div class="stats-panel">
         <div class="stat-card"><span class="stat-num" id="count-country">0</span><span class="stat-desc">国家/地区</span></div>
         <div class="stat-card"><span class="stat-num" id="count-total">0</span><span class="stat-desc">足迹总数</span></div>
     </div>
 
-    <!-- 图例 -->
-    <div class="legend-box">
-        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 0.3)"></div>足迹初探 (1处)</div>
-        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 0.6)"></div>深度游览 (2处)</div>
-        <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 1.0); box-shadow:0 0 5px gold;"></div>完全探索 (3处+)</div>
-    </div>
-
-    <!-- 侧边栏控件 -->
     <div class="sidebar-btn" onclick="toggleSidebar()">☰</div>
-    <div class="sidebar-edit-toggle" onclick="toggleEditMode()" title="编辑模式">✎</div>
-    <div id="region-filter-btn" class="region-record-btn" title="查看当前区域记录">📖</div>
-    
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">旅行日志 (归档)</div>
+        <div style="padding: 20px 20px 0; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
         <div class="sidebar-content" id="log-container"></div>
     </div>
 
     <div id="map-container"></div>
 
-    <!-- 录入弹窗 -->
-    <div id="modal-mask" class="modal-mask">
-        <div class="modal">
-            <h3 style="margin-top:0; color:#00dfff; border-bottom:1px solid #334; padding-bottom:10px;">记录美好旅程</h3>
-            <div class="form-item">
-                <label>位置</label>
-                <input type="text" id="loc-display" readonly style="color:#FFD700; font-weight:bold; border:none; padding-left:0; background:transparent;">
-            </div>
-            <div class="form-item" style="display:flex; gap:10px;">
-                <div style="flex:1;">
-                    <label>日期</label>
-                    <input type="date" id="input-date">
-                </div>
-                <div style="width:80px;">
-                    <label>天数</label>
-                    <input type="number" id="input-days" value="1" min="1" style="text-align:center;">
-                </div>
-            </div>
-            <div class="form-item">
-                <label>选择标签 (多选)</label>
-                <div class="tag-selector-container" id="tag-selector-area"></div>
-            </div>
-            
-            <!-- 动态数据 -->
-            <div id="data-hike-run" class="dynamic-data-row">
-                <div class="dynamic-input-group"><label>📏 距离(km)</label><input type="number" id="input-distance" step="0.1"></div>
-                <div class="dynamic-input-group"><label>⛰️ 爬升(m)</label><input type="number" id="input-climb"></div>
-            </div>
-            <div id="data-dive" class="dynamic-data-row">
-                <div class="dynamic-input-group"><label>🤿 气瓶数</label><input type="number" id="input-dives"></div>
-            </div>
-            <div id="data-ski" class="dynamic-data-row">
-                <div class="dynamic-input-group"><label>⛷️ 滑雪里程(km)</label><input type="number" id="input-ski-dist" step="0.1"></div>
-            </div>
-
-            <div class="form-item">
-                <label>备注</label>
-                <textarea id="input-note" rows="2"></textarea>
-            </div>
-            <div class="modal-btns">
-                <button id="btn-delete" class="btn-del" onclick="deleteRecord()">删除</button>
-                <button class="btn-cancel" onclick="closeModal()">取消</button>
-                <button class="btn-ok" onclick="saveRecord()">保存</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 标签管理弹窗 -->
-    <div id="tag-manager-mask" class="modal-mask">
-        <div class="modal">
-            <h3 style="margin-top:0; color:#FFD700; border-bottom:1px solid #334; padding-bottom:10px;">标签管理</h3>
-            <div class="tag-input-group">
-                <input type="text" id="new-tag-name" placeholder="新标签名">
-                <button class="btn-ok" onclick="addNewTag()" style="padding:5px 15px;">添加</button>
-            </div>
-            <div class="form-item">
-                <label>已有标签</label>
-                <div class="tag-list-manage" id="manage-tag-list"></div>
-            </div>
-            <div class="modal-btns"><button class="btn-cancel" onclick="closeTagManager()">关闭</button></div>
-        </div>
-    </div>
-
-<!-- 登录/注册弹窗 -->
-    <div id="login-mask" class="modal-mask" style="display:flex;"> <!-- 默认显示 -->
+    <!-- 登录/注册弹窗 -->
+    <div id="login-mask" class="modal-mask">
         <div class="modal" style="text-align:center;">
             <h2 style="color:#00dfff; margin-bottom:20px;">🌍 开启云端旅程</h2>
             <div class="form-item">
@@ -373,36 +187,57 @@
         </div>
     </div>
 
-    <!-- 用户状态栏 (添加在左侧面板按钮组的最上方) -->
-    <!-- 请将此代码插入到 class="btn-group-left" 的最开始位置 -->
-    <div id="user-status" style="margin-bottom:10px; font-size:12px; color:#00dfff; display:none;">
-        👤 <span id="user-email"></span> 
-        <a href="#" onclick="handleLogout()" style="color:#888; margin-left:5px;">[退出]</a>
+    <!-- 录入弹窗 -->
+    <div id="modal-mask" class="modal-mask">
+        <div class="modal">
+            <h3 style="margin-top:0; color:#00dfff; border-bottom:1px solid #334; padding-bottom:10px;">记录美好旅程</h3>
+            <div class="form-item"><label>位置</label><input type="text" id="loc-display" readonly style="color:#FFD700; font-weight:bold; border:none; padding-left:0; background:transparent;"></div>
+            <div class="form-item" style="display:flex; gap:10px;">
+                <div style="flex:1;"><label>日期</label><input type="date" id="input-date"></div>
+                <div style="width:80px;"><label>天数</label><input type="number" id="input-days" value="1" min="1" style="text-align:center;"></div>
+            </div>
+            <div class="form-item"><label>选择标签 (多选)</label><div class="tag-selector-container" id="tag-selector-area"></div></div>
+            <div id="data-hike-run" class="dynamic-data-row"><div class="dynamic-input-group"><label>📏 距离(km)</label><input type="number" id="input-distance" step="0.1"></div><div class="dynamic-input-group"><label>⛰️ 爬升(m)</label><input type="number" id="input-climb"></div></div>
+            <div id="data-dive" class="dynamic-data-row"><div class="dynamic-input-group"><label>🤿 气瓶数</label><input type="number" id="input-dives"></div></div>
+            <div id="data-ski" class="dynamic-data-row"><div class="dynamic-input-group"><label>⛷️ 滑雪里程(km)</label><input type="number" id="input-ski-dist" step="0.1"></div></div>
+            <div class="form-item"><label>备注</label><textarea id="input-note" rows="2"></textarea></div>
+            <div class="modal-btns">
+                <button id="btn-delete" class="btn-cancel" style="float:left; border-color:#ff4444; color:#ff4444;" onclick="deleteRecord()">删除</button>
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-ok" onclick="saveRecord()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标签管理弹窗 -->
+    <div id="tag-manager-mask" class="modal-mask">
+        <div class="modal">
+            <h3 style="margin-top:0; color:#FFD700; border-bottom:1px solid #334; padding-bottom:10px;">标签管理</h3>
+            <div class="form-item" style="display:flex; gap:10px;"><input type="text" id="new-tag-name" placeholder="新标签名"><button class="btn-ok" onclick="addNewTag()" style="padding:5px 15px;">添加</button></div>
+            <div class="form-item"><label>已有标签</label><div class="tag-list-manage" id="manage-tag-list" style="max-height:200px; overflow-y:auto; border:1px solid #334;"></div></div>
+            <div class="modal-btns"><button class="btn-cancel" onclick="closeTagManager()">关闭</button></div>
+        </div>
     </div>
 
     <!-- Base管理弹窗 -->
     <div id="base-manager-mask" class="modal-mask">
         <div class="modal">
             <h3 style="margin-top:0; color:#FF8C00; border-bottom:1px solid #334; padding-bottom:10px;">Base地管理</h3>
-            <div class="tag-input-group">
-                <input type="text" id="new-base-name" placeholder="城市名，如：上海市">
-                <button class="btn-ok" onclick="addNewBase()" style="padding:5px 15px; background:#FF8C00;">添加</button>
-            </div>
-            <div class="form-item">
-                <label>已有Base</label>
-                <div class="tag-list-manage" id="manage-base-list"></div>
-            </div>
+            <div class="form-item" style="display:flex; gap:10px;"><input type="text" id="new-base-name" placeholder="城市名"><button class="btn-ok" onclick="addNewBase()" style="padding:5px 15px; background:#FF8C00;">添加</button></div>
+            <div class="form-item"><label>已有Base</label><div class="tag-list-manage" id="manage-base-list" style="max-height:200px; overflow-y:auto; border:1px solid #334;"></div></div>
             <div class="modal-btns"><button class="btn-cancel" onclick="closeBaseManager()">关闭</button></div>
         </div>
     </div>
 
 <script>
-// --- Supabase 配置 ---
-    const SUPABASE_URL = 'https://kyslslgfyzunyxpcxody.supabase.co'; // 替换为你的 Project URL
-    const SUPABASE_KEY = 'sb_publishable_NNtPZSWmyqZiewuAqnjpvA_TEsm9p52'; // 替换为你的 anon public Key
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = 'https://kyslslgfyzunyxpcxody.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_NNtPZSWmyqZiewuAqnjpvA_TEsm9p52'; 
     
+    // 初始化 SDK
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = null;
+
+    // --- 2. 基础配置 ---
     const chartDom = document.getElementById('map-container');
     const myChart = echarts.init(chartDom);
     const DATA_KEY = 'travel_map_data_pro';
@@ -410,7 +245,7 @@
     const BASE_KEY = 'travel_map_bases_list';
 
     let travelData = JSON.parse(localStorage.getItem(DATA_KEY)) || [];
-    let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['越野跑', '越野跑训练', '滑雪', '徒步', '潜水', '观星', '摄影', '自驾', '美食', '博物馆'];
+    let userTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || ['越野跑', '滑雪', '徒步', '潜水', '观星', '摄影', '自驾', '美食', '博物馆'];
     let baseCities = JSON.parse(localStorage.getItem(BASE_KEY)) || [];
     let editingIndex = null;
     let tempClickData = null;
@@ -420,33 +255,186 @@
     // 字典
     const CN_MAP = {'China':'中国','United States':'美国','Russia':'俄罗斯','Japan':'日本','Australia':'澳大利亚','Canada':'加拿大','United Kingdom':'英国','France':'法国','Germany':'德国','Italy':'意大利','Spain':'西班牙','South Korea':'韩国','North Korea':'朝鲜','India':'印度','Thailand':'泰国','Philippines':'菲律宾','Indonesia':'印度尼西亚','Malaysia':'马来西亚','Vietnam':'越南','Singapore':'新加坡','Cambodia':'柬埔寨','Laos':'老挝','Myanmar':'缅甸','Brazil':'巴西','Argentina':'阿根廷','Mexico':'墨西哥','Egypt':'埃及','South Africa':'南非','Turkey':'土耳其','Netherlands':'荷兰','Switzerland':'瑞士','Sweden':'瑞典','Norway':'挪威','Finland':'芬兰','Denmark':'丹麦','New Zealand':'新西兰','United Arab Emirates':'阿联酋','Saudi Arabia':'沙特阿拉伯','Portugal':'葡萄牙','Greece':'希腊','Austria':'奥地利','Hungary':'匈牙利','Czech Republic':'捷克','Oman':'阿曼','Jordan':'约旦','Iran':'伊朗','Kazakhstan':'哈萨克斯坦','Uzbekistan':'乌兹别克斯坦','Armenia':'亚美尼亚','Azerbaijan':'阿塞拜疆','Georgia':'格鲁吉亚','Maldives':'马尔代夫','Ethiopia':'埃塞俄比亚','Tanzania':'坦桑尼亚','Kenya':'肯尼亚','Rwanda':'卢旺达','Nepal':'尼泊尔'};
     const COUNTRY_ISO = {'China':'cn','United States':'us','Russia':'ru','Japan':'jp','Australia':'au','Canada':'ca','United Kingdom':'gb','France':'fr','Germany':'de','Italy':'it','Spain':'es','South Korea':'kr','Thailand':'th','Philippines':'ph','Indonesia':'id','Malaysia':'my','Vietnam':'vn','Singapore':'sg','Brazil':'br','Argentina':'ar','Egypt':'eg','Turkey':'tr','Netherlands':'nl','Switzerland':'ch','Sweden':'se','New Zealand':'nz','Austria':'at','Hungary':'hu','Czech Republic':'cz','Oman':'om','Jordan':'jo','Iran':'ir','Kazakhstan':'kz','Uzbekistan':'uz','Maldives':'mv','Ethiopia':'et','Tanzania':'tz','Kenya':'ke','Rwanda':'rw','Nepal':'np'};
+    const MAP_URLS = { world: 'https://code.highcharts.com/mapdata/custom/world.geo.json','Thailand':'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json','Vietnam':'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json','Malaysia':'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json','Indonesia':'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json','Philippines':'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json','United States':'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json','Japan':'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json','United Kingdom':'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json','France':'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json','Germany':'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json','Italy':'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json','Spain':'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json','Russia':'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json','Australia':'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json','Canada':'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json','Switzerland':'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json','Turkey':'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json','Egypt':'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json','New Zealand':'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json','South Korea':'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json','Hungary':'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json','Czech Republic':'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json','Austria':'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json','Oman':'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json','Jordan':'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json','Iran':'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json','Kazakhstan':'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json','Uzbekistan':'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json','Armenia':'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json','Azerbaijan':'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json','Georgia':'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json','Maldives':'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json','Ethiopia':'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json','Tanzania':'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json','Kenya':'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json','Rwanda':'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json','Nepal':'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json' };
     const CHINA_PROVINCES = {'China':100000,'北京市':110000,'天津市':120000,'河北省':130000,'山西省':140000,'内蒙古自治区':150000,'辽宁省':210000,'吉林省':220000,'黑龙江省':230000,'上海市':310000,'江苏省':320000,'浙江省':330000,'安徽省':340000,'福建省':350000,'江西省':360000,'山东省':370000,'河南省':410000,'湖北省':420000,'湖南省':430000,'广东省':440000,'广西壮族自治区':450000,'海南省':460000,'重庆市':500000,'四川省':510000,'贵州省':520000,'云南省':530000,'西藏自治区':540000,'陕西省':610000,'甘肃省':620000,'青海省':630000,'宁夏回族自治区':640000,'新疆维吾尔自治区':650000,'台湾省':710000,'香港特别行政区':810000,'澳门特别行政区':820000};
     const NO_DRILL_LIST = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
-    const MAP_URLS = { world: 'https://code.highcharts.com/mapdata/custom/world.geo.json','Thailand':'https://code.highcharts.com/mapdata/countries/th/th-all.geo.json','Vietnam':'https://code.highcharts.com/mapdata/countries/vn/vn-all.geo.json','Malaysia':'https://code.highcharts.com/mapdata/countries/my/my-all.geo.json','Indonesia':'https://code.highcharts.com/mapdata/countries/id/id-all.geo.json','Philippines':'https://code.highcharts.com/mapdata/countries/ph/ph-all.geo.json','United States':'https://code.highcharts.com/mapdata/countries/us/us-all.geo.json','Japan':'https://code.highcharts.com/mapdata/countries/jp/jp-all.geo.json','United Kingdom':'https://code.highcharts.com/mapdata/countries/gb/gb-all.geo.json','France':'https://code.highcharts.com/mapdata/countries/fr/fr-all.geo.json','Germany':'https://code.highcharts.com/mapdata/countries/de/de-all.geo.json','Italy':'https://code.highcharts.com/mapdata/countries/it/it-all.geo.json','Spain':'https://code.highcharts.com/mapdata/countries/es/es-all.geo.json','Russia':'https://code.highcharts.com/mapdata/countries/ru/ru-all.geo.json','Australia':'https://code.highcharts.com/mapdata/countries/au/au-all.geo.json','Canada':'https://code.highcharts.com/mapdata/countries/ca/ca-all.geo.json','Switzerland':'https://code.highcharts.com/mapdata/countries/ch/ch-all.geo.json','Turkey':'https://code.highcharts.com/mapdata/countries/tr/tr-all.geo.json','Egypt':'https://code.highcharts.com/mapdata/countries/eg/eg-all.geo.json','New Zealand':'https://code.highcharts.com/mapdata/countries/nz/nz-all.geo.json','South Korea':'https://code.highcharts.com/mapdata/countries/kr/kr-all.geo.json','Hungary':'https://code.highcharts.com/mapdata/countries/hu/hu-all.geo.json','Czech Republic':'https://code.highcharts.com/mapdata/countries/cz/cz-all.geo.json','Austria':'https://code.highcharts.com/mapdata/countries/at/at-all.geo.json','Oman':'https://code.highcharts.com/mapdata/countries/om/om-all.geo.json','Jordan':'https://code.highcharts.com/mapdata/countries/jo/jo-all.geo.json','Iran':'https://code.highcharts.com/mapdata/countries/ir/ir-all.geo.json','Kazakhstan':'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json','Uzbekistan':'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json','Armenia':'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json','Azerbaijan':'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json','Georgia':'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json','Maldives':'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json','Ethiopia':'https://code.highcharts.com/mapdata/countries/et/et-all.geo.json','Tanzania':'https://code.highcharts.com/mapdata/countries/tz/tz-all.geo.json','Kenya':'https://code.highcharts.com/mapdata/countries/ke/ke-all.geo.json','Rwanda':'https://code.highcharts.com/mapdata/countries/rw/rw-all.geo.json','Nepal':'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json' };
 
-    // --- 侧边栏渲染 (带筛选) ---
-    function updateLogSidebar(filterObj = null) {
+    // --- 认证与同步逻辑 ---
+    async function handleSignUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        if(!email || !password) return alert("请输入邮箱和密码");
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) document.getElementById('login-msg').innerText = error.message;
+        else { alert("注册成功！请检查邮箱或直接登录。"); handleLogin(); }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) document.getElementById('login-msg').innerText = error.message;
+        else { currentUser = data.user; initCloudData(); }
+    }
+
+    async function handleLogout() {
+        await supabaseClient.auth.signOut();
+        location.reload();
+    }
+
+    function useOfflineMode() { document.getElementById('login-mask').style.display = 'none'; }
+
+    async function initCloudData() {
+        document.getElementById('login-mask').style.display = 'none';
+        document.getElementById('user-status').style.display = 'block';
+        document.getElementById('user-email').innerText = currentUser.email.split('@')[0];
+
+        const { data, error } = await supabaseClient.from('user_profiles').select('*').eq('id', currentUser.id).single();
+        if (data) {
+            travelData = data.travel_data || [];
+            userTags = data.tags || userTags;
+            baseCities = data.bases || [];
+            localStorage.setItem(DATA_KEY, JSON.stringify(travelData)); // 同步到本地
+        } else {
+            saveToCloud(); // 新用户同步本地到云端
+        }
+        updateLogSidebar(); updateStats(); renderWorld();
+    }
+
+    async function saveToCloud() {
+        if (!currentUser) return;
+        const { error } = await supabaseClient.from('user_profiles').upsert({ 
+            id: currentUser.id, travel_data: travelData, tags: userTags, bases: baseCities
+        });
+        if (error) console.error("同步失败:", error);
+    }
+
+    // --- 核心业务逻辑 ---
+    function setupClickEvent(country, fixedProvince) {
+        myChart.off('click');
+        myChart.on('click', params => {
+            if (params.componentType === 'geo') {
+                let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
+                tempClickData = { country: country, province: fixedProvince || params.name, city: fixedProvince ? params.name : '', lng: coord[0], lat: coord[1] };
+                let cnC = CN_MAP[country] || country;
+                let loc = cnC + (tempClickData.city ? ` · ${tempClickData.province} · ${tempClickData.city}` : ` · ${tempClickData.province}`);
+                
+                document.getElementById('loc-display').value = loc;
+                document.getElementById('input-date').valueAsDate = new Date();
+                document.getElementById('input-days').value = 1;
+                document.getElementById('input-note').value = '';
+                document.getElementById('input-distance').value = ''; document.getElementById('input-climb').value = ''; 
+                document.getElementById('input-dives').value = ''; document.getElementById('input-ski-dist').value = '';
+                document.getElementById('data-hike-run').classList.remove('active'); document.getElementById('data-dive').classList.remove('active'); document.getElementById('data-ski').classList.remove('active');
+                
+                editingIndex = null;
+                document.getElementById('btn-delete').style.display = 'none';
+                
+                const tagArea = document.getElementById('tag-selector-area');
+                tagArea.innerHTML = '';
+                userTags.forEach(tag => {
+                    let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
+                    span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
+                    tagArea.appendChild(span);
+                });
+                document.getElementById('modal-mask').style.display = 'flex';
+            }
+        });
+    }
+
+    function editRecord(index) {
+        const r = travelData[index];
+        editingIndex = index;
+        tempClickData = { country: r.country, province: r.province, city: r.city, lng: r.lng, lat: r.lat };
+        document.getElementById('loc-display').value = (CN_MAP[r.country]||r.country) + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
+        document.getElementById('input-date').value = r.date;
+        document.getElementById('input-days').value = r.days || 1;
+        document.getElementById('input-note').value = r.note || '';
+        document.getElementById('input-distance').value = r.distance || '';
+        document.getElementById('input-climb').value = r.climb || '';
+        document.getElementById('input-dives').value = r.dives || '';
+        document.getElementById('input-ski-dist').value = r.skiDist || '';
+        
+        document.getElementById('btn-delete').style.display = 'inline-block';
+        const tagArea = document.getElementById('tag-selector-area');
+        tagArea.innerHTML = '';
+        userTags.forEach(tag => {
+            let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
+            if (r.tags && r.tags.includes(tag)) span.classList.add('selected');
+            span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
+            tagArea.appendChild(span);
+        });
+        checkDynamicInputs();
+        document.getElementById('modal-mask').style.display = 'flex';
+    }
+
+    function saveRecord() {
+        const date = document.getElementById('input-date').value;
+        const note = document.getElementById('input-note').value;
+        const days = parseInt(document.getElementById('input-days').value) || 1;
+        const dist = document.getElementById('input-distance').value;
+        const climb = document.getElementById('input-climb').value;
+        const dives = document.getElementById('input-dives').value;
+        const skiDist = document.getElementById('input-ski-dist').value;
+        
+        let selectedTags = [];
+        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
+
+        const recordObj = { ...tempClickData, date, days, note, tags: selectedTags, distance: dist, climb: climb, dives: dives, skiDist: skiDist };
+
+        if (editingIndex !== null) travelData[editingIndex] = recordObj;
+        else travelData.push(recordObj);
+
+        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
+        saveToCloud(); // 云端保存
+        closeModal();
+        updateLogSidebar(); updateStats();
+        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
+        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
+        else if (currentLevel === 'world') renderWorld();
+        else renderChina();
+    }
+
+    function deleteRecord() {
+        if (editingIndex === null) return;
+        if (!confirm("确定删除？")) return;
+        travelData.splice(editingIndex, 1);
+        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
+        saveToCloud();
+        closeModal();
+        updateLogSidebar(); updateStats();
+        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
+        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
+        else if (currentLevel === 'world') renderWorld();
+        else renderChina();
+    }
+
+    function checkDynamicInputs() {
+        let selectedTags = [];
+        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
+        const tStr = selectedTags.join(',');
+        const divHike = document.getElementById('data-hike-run');
+        const divDive = document.getElementById('data-dive');
+        const divSki = document.getElementById('data-ski');
+        if ((tStr.includes('徒步') || tStr.includes('越野跑'))) divHike.classList.add('active'); else divHike.classList.remove('active');
+        if (tStr.includes('潜水')) divDive.classList.add('active'); else divDive.classList.remove('active');
+        if (tStr.includes('滑雪')) divSki.classList.add('active'); else divSki.classList.remove('active');
+    }
+
+    // --- 侧边栏与渲染 ---
+    function updateLogSidebar() {
         const container = document.getElementById('log-container');
         container.innerHTML = '';
         
-        let filteredData = travelData.map((item, index) => ({...item, originalIndex: index}));
-        if (filterObj) {
-            filteredData = filteredData.filter(r => filterObj.province ? (r.country === filterObj.country && r.province === filterObj.province) : r.country === filterObj.country);
-            let title = filterObj.province ? filterObj.province : (CN_MAP[filterObj.country] || filterObj.country);
-            document.querySelector('#sidebar .sidebar-header').innerHTML = `${title} <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
-        } else {
-            document.querySelector('#sidebar .sidebar-header').innerHTML = '旅行日志 (归档)';
-        }
-
-        if (filteredData.length === 0) { container.innerHTML = '<div style="color:#888; text-align:center; margin-top:20px;">暂无记录</div>'; return; }
-
+        let indexedData = travelData.map((item, index) => ({...item, originalIndex: index}));
         let groups = {};
-        filteredData.forEach(r => { let y = r.date.substring(0,4)||'未知'; if(!groups[y]) groups[y]=[]; groups[y].push(r); });
+        indexedData.forEach(r => { let y = r.date.substring(0,4)||'未知'; if(!groups[y]) groups[y]=[]; groups[y].push(r); });
 
         Object.keys(groups).sort((a,b)=>b-a).forEach(year => {
             let recs = groups[year].sort((a,b) => new Date(b.date)-new Date(a.date));
             let totalDays = recs.reduce((sum, r) => sum + (parseInt(r.days)||1), 0);
 
+            // 统计
             let stats = { hike: { count: 0, dist: 0, climb: 0 }, dive: { count: 0 }, run:  { count: 0, dist: 0, climb: 0 } };
             recs.forEach(r => {
                 const tStr = (r.tags||[]).join(',');
@@ -454,23 +442,17 @@
                 if (tStr.includes('潜水')) { stats.dive.count+=parseFloat(r.dives)||0; }
                 if (tStr.includes('越野跑')) { stats.run.count++; stats.run.dist+=parseFloat(r.distance)||0; stats.run.climb+=parseFloat(r.climb)||0; }
             });
-
             let statsContent = '';
             if (stats.hike.count > 0) statsContent += `<div class="summary-row sum-hike"><span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span><span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span></div>`;
             if (stats.run.count > 0) statsContent += `<div class="summary-row sum-run"><span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span><span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span></div>`;
             if (stats.dive.count > 0) statsContent += `<div class="summary-row sum-dive"><span class="sum-title">🤿 潜水</span><span class="sum-data">累计 ${stats.dive.count} 瓶</span></div>`;
-            
-            let summaryDiv = document.createElement('div');
-            if (statsContent) summaryDiv.innerHTML = `<div class="year-summary-box">${statsContent}</div>`;
+            let summaryDiv = document.createElement('div'); if (statsContent) summaryDiv.innerHTML = `<div class="year-summary-box">${statsContent}</div>`;
 
             let header = document.createElement('div');
             header.className = 'year-header';
             header.innerHTML = `<span>${year}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
-            
             let list = document.createElement('div');
             list.className = 'record-list';
-            list.style.display = filterObj ? 'block' : 'none'; // 筛选时默认展开
-            if (filterObj && statsContent) setTimeout(() => { if(summaryDiv.firstChild) summaryDiv.firstChild.style.display = 'block'; },0);
 
             recs.forEach(r => {
                 let div = document.createElement('div');
@@ -499,9 +481,7 @@
                 if (r.skiDist) parts.push(`⛷️ ${r.skiDist}km`);
                 if (parts.length > 0) statsHtml = `<div style="margin-top:4px; font-size:11px; color:#FFD700; text-shadow: 0 1px 2px black;">${parts.join(' &nbsp;|&nbsp; ')}</div>`;
 
-                let noteHtml = '';
-                if (r.note && r.note.trim() !== '') noteHtml = `<div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">${r.note}</div>`;
-
+                let noteHtml = r.note ? `<div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic;">${r.note}</div>` : '';
                 let cn = CN_MAP[r.country] || r.country;
                 let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
                 let tagsHtml = ''; if(r.tags) r.tags.forEach(t => tagsHtml += `<span class="rec-tag-badge">${t}</span>`);
@@ -531,33 +511,47 @@
             header.onclick = function() {
                 const sumBox = summaryDiv.querySelector('.year-summary-box');
                 if (list.style.display === 'none') {
-                    list.style.display = 'block';
-                    if(sumBox) sumBox.style.display = 'block';
+                    list.style.display = 'block'; if(sumBox) sumBox.style.display = 'block';
                 } else {
-                    list.style.display = 'none';
-                    if(sumBox) sumBox.style.display = 'none';
+                    list.style.display = 'none'; if(sumBox) sumBox.style.display = 'none';
                 }
             };
-            container.appendChild(header);
-            container.appendChild(summaryDiv);
-            container.appendChild(list);
+            container.appendChild(header); container.appendChild(summaryDiv); container.appendChild(list);
         });
     }
 
-    function resetSidebar() { updateLogSidebar(null); }
-
     // --- 地图渲染 ---
-    function renderWorld() {
-        currentLevel = 'world';
-        updateBackButton(false);
-        document.getElementById('region-filter-btn').style.display = 'none';
-        updateLogSidebar(null); 
-        myChart.clear();
-        myChart.showLoading({ text: '加载世界地图...', color: '#00dfff', maskColor: 'rgba(0,0,0,0.5)' });
+    function getCommonOption(mapName, regions, series = []) {
+        const isWorld = mapName === 'world';
+        return {
+            backgroundColor: 'rgba(0,0,0,0)',
+            tooltip: {
+                trigger: 'item', backgroundColor: 'rgba(0,10,20,0.9)', borderColor: '#00dfff', textStyle: { color: '#fff' },
+                formatter: params => {
+                    if (params.componentType === 'series') {
+                        const d = params.data.custom;
+                        let tagsStr = d.tags && d.tags.length ? `<br>标签: <span style="color:#00dfff">${d.tags.join(', ')}</span>` : '';
+                        return `<b>${params.data.name}</b><br>${d.date}${tagsStr}<br>${d.note}`;
+                    }
+                    return CN_MAP[params.name] || params.name;
+                }
+            },
+            geo: {
+                map: mapName, roam: true, aspectScale: 0.75, layoutCenter: ['50%', '50%'], layoutSize: '100%',
+                label: { show: true, color: '#fff', fontSize: 10, textShadowColor: '#000', textShadowBlur: 2, formatter: p => isWorld ? (CN_MAP[p.name] ? CN_MAP[p.name] : "") : p.name },
+                itemStyle: { areaColor: '#1a2b3c', borderColor: '#4facfe', borderWidth: 0.6, shadowColor: 'rgba(0, 223, 255, 0.4)', shadowBlur: 10 },
+                emphasis: { itemStyle: { areaColor: '#00dfff', shadowBlur: 20 }, label: { show: true, color: '#000' } },
+                select: { disabled: true }, regions: regions
+            },
+            series: series
+        };
+    }
 
+    function renderWorld() {
+        currentLevel = 'world'; updateBackButton(false);
+        myChart.clear(); myChart.showLoading({ text: '加载世界地图...', color: '#00dfff', maskColor: 'rgba(0,0,0,0.5)' });
         $.getJSON(MAP_URLS.world, function(geo) {
-            myChart.hideLoading();
-            echarts.registerMap('world', geo);
+            myChart.hideLoading(); echarts.registerMap('world', geo);
             let regions = [];
             geo.features.forEach(f => {
                 let name = f.properties.name;
@@ -565,8 +559,7 @@
                 let color = getHeatColor(count);
                 if (color) regions.push({ name: name, itemStyle: { areaColor: color } });
             });
-            let option = getCommonOption('world', regions);
-            myChart.setOption(option, true);
+            myChart.setOption(getCommonOption('world', regions), true);
             myChart.off('click');
             myChart.on('click', params => {
                 if (params.componentType === 'geo') {
@@ -579,15 +572,10 @@
     }
 
     function renderChina() {
-        currentLevel = 'china';
-        currentScopeName = 'China';
-        updateBackButton(true, "← 返回世界", renderWorld);
-        document.getElementById('region-filter-btn').style.display = 'none';
-        updateLogSidebar(null);
+        currentLevel = 'china'; currentScopeName = 'China'; updateBackButton(true, "← 返回世界", renderWorld);
         myChart.showLoading();
         $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function(geo) {
-            myChart.hideLoading();
-            echarts.registerMap('china', geo);
+            myChart.hideLoading(); echarts.registerMap('china', geo);
             let regions = [];
             geo.features.forEach(f => {
                 let pName = f.properties.name;
@@ -613,19 +601,11 @@
     }
 
     function renderProvince(pName, adcode) {
-        currentLevel = 'province';
-        currentScopeName = pName;
-        updateBackButton(true, "← 返回中国", renderChina);
-        const filterBtn = document.getElementById('region-filter-btn');
-        filterBtn.style.display = 'flex';
-        filterBtn.onclick = function() { updateLogSidebar({ country: 'China', province: pName }); document.getElementById('sidebar').classList.add('open'); };
-
+        currentLevel = 'province'; currentScopeName = pName; updateBackButton(true, "← 返回中国", renderChina);
         myChart.showLoading();
         $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, function(geo) {
-            myChart.hideLoading();
-            echarts.registerMap(pName, geo);
-            let regions = [];
-            let points = [];
+            myChart.hideLoading(); echarts.registerMap(pName, geo);
+            let regions = []; let points = [];
             geo.features.forEach(f => {
                 let city = f.properties.name;
                 let itemStyle = null;
@@ -637,32 +617,18 @@
                 }
                 if (itemStyle) regions.push({ name: city, itemStyle: itemStyle });
             });
-            let series = [{
-                type: 'scatter', coordinateSystem: 'geo', data: points,
-                symbol: 'circle', symbolSize: 12,
-                itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' }
-            }];
-            let opt = getCommonOption(pName, regions, series);
-            opt.geo.label.show = true;
-            myChart.setOption(opt, true);
+            let series = [{ type: 'scatter', coordinateSystem: 'geo', data: points, symbol: 'circle', symbolSize: 12, itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' } }];
+            myChart.setOption(getCommonOption(pName, regions, series), true);
             setupClickEvent('China', pName);
         });
     }
 
     function renderForeign(cName) {
-        currentLevel = 'foreign';
-        currentScopeName = cName;
-        updateBackButton(true, "← 返回世界", renderWorld);
-        const filterBtn = document.getElementById('region-filter-btn');
-        filterBtn.style.display = 'flex';
-        filterBtn.onclick = function() { updateLogSidebar({ country: cName }); document.getElementById('sidebar').classList.add('open'); };
-
+        currentLevel = 'foreign'; currentScopeName = cName; updateBackButton(true, "← 返回世界", renderWorld);
         myChart.showLoading();
         $.getJSON(MAP_URLS[cName], function(geo) {
-            myChart.hideLoading();
-            echarts.registerMap(cName, geo);
-            let regions = [];
-            let points = [];
+            myChart.hideLoading(); echarts.registerMap(cName, geo);
+            let regions = []; let points = [];
             geo.features.forEach(f => {
                 let state = f.properties.name;
                 let recs = travelData.filter(r => r.country === cName && r.province === state);
@@ -671,459 +637,77 @@
                     recs.forEach(r => points.push({ name: r.province, value: [r.lng, r.lat], custom: r }));
                 }
             });
-            let series = [{
-                type: 'scatter', coordinateSystem: 'geo', data: points,
-                symbol: 'circle', symbolSize: 12,
-                itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' }
-            }];
+            let series = [{ type: 'scatter', coordinateSystem: 'geo', data: points, symbol: 'circle', symbolSize: 12, itemStyle: { color: '#ff3333', shadowBlur: 10, shadowColor: '#ff0000', borderColor:'#fff' } }];
             myChart.setOption(getCommonOption(cName, regions, series), true);
             setupClickEvent(cName, null);
         });
     }
 
-    function getCommonOption(mapName, regions, series = []) {
-        const isWorld = mapName === 'world';
-        return {
-            backgroundColor: 'rgba(0,0,0,0)',
-            tooltip: {
-                trigger: 'item', backgroundColor: 'rgba(0,10,20,0.9)', borderColor: '#00dfff', textStyle: { color: '#fff' },
-                formatter: params => {
-                    if (params.componentType === 'series') {
-                        const d = params.data.custom;
-                        let tagsStr = d.tags && d.tags.length ? `<br>标签: <span style="color:#00dfff">${d.tags.join(', ')}</span>` : '';
-                        return `<b>${params.data.name}</b><br>${d.date}${tagsStr}<br>${d.note}`;
-                    }
-                    return CN_MAP[params.name] || params.name;
-                }
-            },
-            geo: {
-                map: mapName, roam: true, aspectScale: 0.75, layoutCenter: ['50%', '50%'], layoutSize: '100%',
-                label: {
-                    show: true, color: '#fff', fontSize: 10, textShadowColor: '#000', textShadowBlur: 2,
-                    formatter: p => isWorld ? (CN_MAP[p.name] ? CN_MAP[p.name] : "") : p.name
-                },
-                itemStyle: {
-                    areaColor: '#1a2b3c', borderColor: '#4facfe', borderWidth: 0.6,
-                    shadowColor: 'rgba(0, 223, 255, 0.4)', shadowBlur: 10
-                },
-                emphasis: { itemStyle: { areaColor: '#00dfff', shadowBlur: 20 }, label: { show: true, color: '#000' } },
-                select: { disabled: true },
-                regions: regions
-            },
-            series: series
-        };
-    }
-
-    function setupClickEvent(country, fixedProvince) {
-        myChart.off('click');
-        myChart.on('click', params => {
-            if (params.componentType === 'geo') {
-                let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
-                tempClickData = {
-                    country: country, province: fixedProvince || params.name,
-                    city: fixedProvince ? params.name : '', lng: coord[0], lat: coord[1]
-                };
-                let cnC = CN_MAP[country] || country;
-                let loc = cnC + (tempClickData.city ? ` · ${tempClickData.province} · ${tempClickData.city}` : ` · ${tempClickData.province}`);
-                document.getElementById('loc-display').value = loc;
-                document.getElementById('input-date').valueAsDate = new Date();
-                document.getElementById('input-days').value = 1;
-                document.getElementById('input-note').value = '';
-                document.getElementById('input-distance').value = ''; document.getElementById('input-climb').value = ''; 
-                document.getElementById('input-dives').value = ''; document.getElementById('input-ski-dist').value = '';
-                document.getElementById('data-hike-run').classList.remove('active'); document.getElementById('data-dive').classList.remove('active'); document.getElementById('data-ski').classList.remove('active');
-                editingIndex = null;
-                document.getElementById('btn-delete').style.display = 'none';
-                
-                const tagArea = document.getElementById('tag-selector-area');
-                tagArea.innerHTML = '';
-                userTags.forEach(tag => {
-                    let span = document.createElement('span');
-                    span.className = 'tag-option';
-                    span.innerText = tag;
-                    span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
-                    tagArea.appendChild(span);
-                });
-                document.getElementById('modal-mask').style.display = 'block';
-            }
-        });
-    }
-
-    function editRecord(index) {
-        const r = travelData[index];
-        editingIndex = index;
-        tempClickData = { country: r.country, province: r.province, city: r.city, lng: r.lng, lat: r.lat };
-        let cnC = CN_MAP[r.country] || r.country;
-        let loc = cnC + (r.city ? ` · ${r.province} · ${r.city}` : ` · ${r.province}`);
-        document.getElementById('loc-display').value = loc + " (编辑)";
-        document.getElementById('input-date').value = r.date;
-        document.getElementById('input-days').value = r.days || 1;
-        document.getElementById('input-note').value = r.note || '';
-        document.getElementById('input-distance').value = r.distance || '';
-        document.getElementById('input-climb').value = r.climb || '';
-        document.getElementById('input-dives').value = r.dives || '';
-        document.getElementById('input-ski-dist').value = r.skiDist || '';
-        
-        document.getElementById('btn-delete').style.display = 'inline-block';
-        const tagArea = document.getElementById('tag-selector-area');
-        tagArea.innerHTML = '';
-        userTags.forEach(tag => {
-            let span = document.createElement('span');
-            span.className = 'tag-option';
-            span.innerText = tag;
-            if (r.tags && r.tags.includes(tag)) span.classList.add('selected');
-            span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
-            tagArea.appendChild(span);
-        });
-        checkDynamicInputs();
-        document.getElementById('modal-mask').style.display = 'block';
-    }
-
-    function saveRecord() {
-        const date = document.getElementById('input-date').value;
-        const note = document.getElementById('input-note').value;
-        const days = parseInt(document.getElementById('input-days').value) || 1;
-        const dist = document.getElementById('input-distance').value;
-        const climb = document.getElementById('input-climb').value;
-        const dives = document.getElementById('input-dives').value;
-        const skiDist = document.getElementById('input-ski-dist').value;
-        
-        let selectedTags = [];
-        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
-
-        const recordObj = { 
-            ...tempClickData, date, days, note, tags: selectedTags,
-            distance: dist, climb: climb, dives: dives, skiDist: skiDist
-        };
-
-        if (editingIndex !== null) travelData[editingIndex] = recordObj;
-        else travelData.push(recordObj);
-
-        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
-        saveToCloud(); 
-        closeModal();
-        updateLogSidebar();
-        updateStats();
-        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
-        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
-        else if (currentLevel === 'world') renderWorld();
-        else renderChina();
-    }
-
-    function deleteRecord() {
-        if (editingIndex === null) return;
-        if (!confirm("确定删除？")) return;
-        travelData.splice(editingIndex, 1);
-        localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
-        saveToCloud();
-        closeModal();
-        updateLogSidebar();
-        updateStats();
-        if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
-        else if (currentLevel === 'foreign') renderForeign(currentScopeName);
-        else if (currentLevel === 'world') renderWorld();
-        else renderChina();
-    }
-
-    // 辅助逻辑
-    function checkDynamicInputs() {
-        let selectedTags = [];
-        document.querySelectorAll('.tag-option.selected').forEach(el => selectedTags.push(el.innerText));
-        const tStr = selectedTags.join(',');
-
-        const divHike = document.getElementById('data-hike-run');
-        const divDive = document.getElementById('data-dive');
-        const divSki = document.getElementById('data-ski');
-
-        if (divHike) {
-            if (tStr.includes('徒步') || tStr.includes('越野跑')) divHike.classList.add('active'); 
-            else divHike.classList.remove('active');
-        }
-        if (divDive) {
-            if (tStr.includes('潜水')) divDive.classList.add('active'); 
-            else divDive.classList.remove('active');
-        }
-        if (divSki) {
-            if (tStr.includes('滑雪')) divSki.classList.add('active'); 
-            else divSki.classList.remove('active');
-        }
-    }
-    
-    function closeModal() { document.getElementById('modal-mask').style.display = 'none'; }
-    
-    function updateBackButton(show, text, handler) { 
-        const btn = document.getElementById('nav-back-btn'); 
-        if (show) { 
-            btn.style.display = 'flex'; 
-            btn.innerText = text; 
-            btn.onclick = handler; 
-        } else { 
-            btn.style.display = 'none'; 
-        } 
-    }
-
-    function getHeatColor(count) { 
-        if(count >= 3) return 'rgba(255, 215, 0, 1.0)'; 
-        if(count === 2) return 'rgba(255, 215, 0, 0.6)'; 
-        if(count === 1) return 'rgba(255, 215, 0, 0.3)'; 
-        return null; 
-    }
-
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-    
-    function toggleEditMode() { 
-        document.getElementById('sidebar').classList.toggle('edit-mode'); 
-        document.querySelector('.sidebar-edit-toggle').classList.toggle('active');
-    }
-
-    function updateStats() {
-        document.getElementById('count-country').innerText = new Set(travelData.map(r => r.country)).size;
-        document.getElementById('count-total').innerText = travelData.length;
-    }
-
-    // --- 标签管理逻辑 ---
-    function openTagManager() {
-        const listDiv = document.getElementById('manage-tag-list');
-        listDiv.innerHTML = '';
-        userTags.forEach((tag, index) => {
-            let item = document.createElement('div');
-            item.className = 'manage-tag-item';
-            item.innerHTML = `<span>${tag}</span> <span class="btn-del-tag" onclick="deleteTag(${index})">删除</span>`;
-            listDiv.appendChild(item);
-        });
-        document.getElementById('tag-manager-mask').style.display = 'block';
-    }
-    
-    function closeTagManager() { document.getElementById('tag-manager-mask').style.display = 'none'; }
-    
-    function addNewTag() {
-        const val = document.getElementById('new-tag-name').value.trim();
-        if(val && !userTags.includes(val)) {
-            userTags.push(val); 
-            localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
-saveToCloud(); 
-            document.getElementById('new-tag-name').value = ''; 
-            openTagManager();
-        }
-    }
-    
-    function deleteTag(index) {
-        if(confirm('删除此标签？')) { 
-            userTags.splice(index, 1); 
-            localStorage.setItem(TAGS_KEY, JSON.stringify(userTags)); 
-saveToCloud(); 
-            openTagManager(); 
-        }
-    }
-
-    // --- Base地管理逻辑 ---
-    function openBaseManager() {
-        const listDiv = document.getElementById('manage-base-list');
-        listDiv.innerHTML = '';
-        baseCities.forEach((city, index) => {
-            let item = document.createElement('div');
-            item.className = 'manage-tag-item';
-            item.innerHTML = `<span style="color:#FF8C00">${city}</span> <span class="btn-del-tag" onclick="deleteBase(${index})">删除</span>`;
-            listDiv.appendChild(item);
-        });
-        document.getElementById('base-manager-mask').style.display = 'block';
-    }
-    
-    function closeBaseManager() { 
-        document.getElementById('base-manager-mask').style.display = 'none'; 
-        // 刷新当前地图以更新颜色
-        if (currentLevel === 'china') renderChina();
-        else if (currentLevel === 'province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]);
-    }
-    
-    function addNewBase() {
-        const val = document.getElementById('new-base-name').value.trim();
-        if(val && !baseCities.includes(val)) {
-            baseCities.push(val); 
-            localStorage.setItem(BASE_KEY, JSON.stringify(baseCities));
-saveToCloud(); 
-            document.getElementById('new-base-name').value = ''; 
-            openBaseManager();
-        }
-    }
-    
-    function deleteBase(index) {
-        if(confirm('移除此Base地？')) { 
-            baseCities.splice(index, 1); 
-            localStorage.setItem(BASE_KEY, JSON.stringify(baseCities)); 
-saveToCloud(); 
-            openBaseManager(); 
-        }
-    }
-
-    // --- 直辖市/港澳 点击逻辑 ---
+    // 辅助
     function openDirectCityModal(country, cityName, coord) {
-        tempClickData = {
-            country: country, province: cityName, city: cityName, lng: coord[0], lat: coord[1]
-        };
-        let loc = `${CN_MAP[country]} ${cityName}`;
-        document.getElementById('loc-display').value = loc;
+        tempClickData = { country: country, province: cityName, city: cityName, lng: coord[0], lat: coord[1] };
+        document.getElementById('loc-display').value = `${CN_MAP[country]} ${cityName}`;
         document.getElementById('input-date').valueAsDate = new Date();
         document.getElementById('input-days').value = 1;
         document.getElementById('input-note').value = '';
-        // 重置动态数据
         document.getElementById('input-distance').value = ''; document.getElementById('input-climb').value = ''; 
         document.getElementById('input-dives').value = ''; document.getElementById('input-ski-dist').value = '';
         document.getElementById('data-hike-run').classList.remove('active'); document.getElementById('data-dive').classList.remove('active'); document.getElementById('data-ski').classList.remove('active');
-        
-        editingIndex = null;
-        document.getElementById('btn-delete').style.display = 'none';
-
-        const tagArea = document.getElementById('tag-selector-area');
-        tagArea.innerHTML = '';
+        editingIndex = null; document.getElementById('btn-delete').style.display = 'none';
+        const tagArea = document.getElementById('tag-selector-area'); tagArea.innerHTML = '';
         userTags.forEach(tag => {
-            let span = document.createElement('span');
-            span.className = 'tag-option';
-            span.innerText = tag;
+            let span = document.createElement('span'); span.className = 'tag-option'; span.innerText = tag;
             span.onclick = function() { this.classList.toggle('selected'); checkDynamicInputs(); };
             tagArea.appendChild(span);
         });
-        document.getElementById('modal-mask').style.display = 'block';
+        document.getElementById('modal-mask').style.display = 'flex';
     }
 
-    // --- 数据备份与恢复 ---
-    function exportData() {
-        if (travelData.length === 0 && userTags.length === 0) { alert("暂无数据"); return; }
-        const backup = { version: "3.8", timestamp: new Date().toLocaleString(), data: travelData, tags: userTags, bases: baseCities };
-        const blob = new Blob([JSON.stringify(backup)], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `travel_backup_${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    function toggleEditMode() { document.getElementById('sidebar').classList.toggle('edit-mode'); document.querySelector('.sidebar-edit-toggle').classList.toggle('active'); }
+    function closeModal() { document.getElementById('modal-mask').style.display = 'none'; }
+    function updateBackButton(show, text, handler) { const btn = document.getElementById('nav-back-btn'); if (show) { btn.style.display = 'flex'; btn.innerText = text; btn.onclick = handler; } else { btn.style.display = 'none'; } }
+    function getHeatColor(count) { if(count >= 3) return 'rgba(255, 215, 0, 1.0)'; if(count === 2) return 'rgba(255, 215, 0, 0.6)'; if(count === 1) return 'rgba(255, 215, 0, 0.3)'; return null; }
+    function updateStats() { document.getElementById('count-country').innerText = new Set(travelData.map(r => r.country)).size; document.getElementById('count-total').innerText = travelData.length; }
+
+    function openTagManager() {
+        const listDiv = document.getElementById('manage-tag-list'); listDiv.innerHTML = '';
+        userTags.forEach((tag, index) => {
+            let item = document.createElement('div'); item.className = 'manage-tag-item';
+            item.innerHTML = `<span>${tag}</span> <span class="btn-del-tag" onclick="deleteTag(${index})">删除</span>`;
+            listDiv.appendChild(item);
+        });
+        document.getElementById('tag-manager-mask').style.display = 'flex';
     }
+    function closeTagManager() { document.getElementById('tag-manager-mask').style.display = 'none'; }
+    function addNewTag() { const val = document.getElementById('new-tag-name').value.trim(); if(val && !userTags.includes(val)) { userTags.push(val); localStorage.setItem(TAGS_KEY, JSON.stringify(userTags)); saveToCloud(); document.getElementById('new-tag-name').value = ''; openTagManager(); } }
+    function deleteTag(index) { if(confirm('删除此标签？')) { userTags.splice(index, 1); localStorage.setItem(TAGS_KEY, JSON.stringify(userTags)); saveToCloud(); openTagManager(); } }
 
-    function importData(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const json = JSON.parse(e.target.result);
-                if (!json.data) throw new Error("格式错误");
-                if (!confirm(`覆盖当前数据？\n记录数: ${json.data.length}`)) return;
-                travelData = json.data;
-                userTags = json.tags || userTags;
-                baseCities = json.bases || [];
-                localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
-                localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
-                localStorage.setItem(BASE_KEY, JSON.stringify(baseCities));
-                location.reload();
-            } catch (err) { alert("导入失败: " + err.message); }
-        };
-        reader.readAsText(file);
+    function openBaseManager() {
+        const listDiv = document.getElementById('manage-base-list'); listDiv.innerHTML = '';
+        baseCities.forEach((city, index) => {
+            let item = document.createElement('div'); item.className = 'manage-tag-item';
+            item.innerHTML = `<span style="color:#FF8C00">${city}</span> <span class="btn-del-tag" onclick="deleteBase(${index})">删除</span>`;
+            listDiv.appendChild(item);
+        });
+        document.getElementById('base-manager-mask').style.display = 'flex';
     }
-// --- 认证与同步逻辑 ---
+    function closeBaseManager() { document.getElementById('base-manager-mask').style.display = 'none'; if(currentLevel==='china') renderChina(); else if(currentLevel==='province') renderProvince(currentScopeName, CHINA_PROVINCES[currentScopeName]); }
+    function addNewBase() { const val = document.getElementById('new-base-name').value.trim(); if(val && !baseCities.includes(val)) { baseCities.push(val); localStorage.setItem(BASE_KEY, JSON.stringify(baseCities)); saveToCloud(); document.getElementById('new-base-name').value = ''; openBaseManager(); } }
+    function deleteBase(index) { if(confirm('移除此Base地？')) { baseCities.splice(index, 1); localStorage.setItem(BASE_KEY, JSON.stringify(baseCities)); saveToCloud(); openBaseManager(); } }
 
-    // 1. 注册
-    async function handleSignUp() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        if(!email || !password) return alert("请输入邮箱和密码");
-        
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-            document.getElementById('login-msg').innerText = error.message;
-        } else {
-            alert("注册成功！请检查邮箱完成验证，或直接登录（视Supabase设置而定）。");
-            handleLogin(); // 尝试自动登录
-        }
-    }
-
-    // 2. 登录
-    async function handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        
-        if (error) {
-            document.getElementById('login-msg').innerText = error.message;
-        } else {
-            currentUser = data.user;
-            initCloudData(); // 登录成功后加载数据
-        }
-    }
-
-    // 3. 退出
-    async function handleLogout() {
-        await supabase.auth.signOut();
-        location.reload();
-    }
-
-    // 4. 离线模式
-    function useOfflineMode() {
-        document.getElementById('login-mask').style.display = 'none';
-        // 离线模式默认读取 LocalStorage (已有逻辑会自动处理)
-    }
-
-    // 5. 初始化云端数据
-    async function initCloudData() {
-        document.getElementById('login-mask').style.display = 'none';
-        document.getElementById('user-status').style.display = 'block';
-        document.getElementById('user-email').innerText = currentUser.email.split('@')[0];
-
-        // 从云端拉取数据
-        const { data, error } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (data) {
-            // 云端有数据：覆盖本地变量（但不覆盖LocalStorage，除非你想做缓存）
-            // 询问策略：如果本地也有数据，可以提示用户是否合并，这里简单处理为“以云端为准”
-            console.log("云端数据加载成功");
-            travelData = data.travel_data || [];
-            userTags = data.tags || userTags;
-            baseCities = data.bases || [];
-        } else {
-            // 云端无数据（新用户）：将本地现有数据上传作为初始数据
-            console.log("新用户，上传本地数据作为初始数据");
-            saveToCloud();
-        }
-
-        // 刷新界面
-        updateLogSidebar();
-        updateStats();
-        renderWorld();
-    }
-
-    // 6. 保存到云端 (替换 LocalStorage)
-    async function saveToCloud() {
-        if (!currentUser) return; // 未登录不上传
-
-        const { error } = await supabase
-            .from('user_profiles')
-            .upsert({ 
-                id: currentUser.id,
-                travel_data: travelData,
-                tags: userTags,
-                bases: baseCities
-            });
-            
-        if (error) console.error("上传失败:", error);
-        else console.log("云端同步成功");
-    }
-
-    // --- 启动与监听 ---
+    // 启动
     window.addEventListener('resize', () => myChart.resize());
-    
-    // 检查是否已有会话 (自动登录)
+    // 检测登录
     supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
             currentUser = session.user;
             initCloudData();
         } else {
-            // 未登录，显示登录框，但在后台先渲染一次离线数据作为背景
-            renderWorld();
-            updateLogSidebar();
-            updateStats();
-            document.getElementById('login-mask').style.display = 'flex';
+            // 未登录先渲染离线数据
+            renderWorld(); updateLogSidebar(); updateStats();
+            // 延时弹出登录，避免视觉突兀
+            setTimeout(() => document.getElementById('login-mask').style.display = 'flex', 500);
         }
     });
 
