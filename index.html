@@ -698,42 +698,6 @@
         filter: grayscale(0%);
         transform: scale(1.05); /* 悬浮时变亮、变色 */
       }
-
-      /* --- 新增特效样式 --- */
-
-      /* 1. 星星呼吸闪烁 */
-      .blinking-stars {
-        animation: moveStars 150s linear infinite,
-          blink 4s ease-in-out infinite alternate;
-      }
-
-      @keyframes blink {
-        0% {
-          opacity: 0.3;
-        }
-        100% {
-          opacity: 0.6;
-        }
-      }
-
-      /* 2. 鼠标跟随光晕 */
-      #cursor-glow {
-        position: fixed;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(
-          circle,
-          rgba(0, 223, 255, 0.08) 0%,
-          transparent 60%
-        );
-        border-radius: 50%;
-        pointer-events: none; /* 必须穿透，否则无法点击地图 */
-        z-index: 0;
-        transform: translate(-50%, -50%);
-        transition: opacity 0.3s;
-        mix-blend-mode: screen; /* 混合模式，让光效更自然 */
-      }
-
       /* 内容层级调整 */
       .rec-content {
         position: relative;
@@ -1176,10 +1140,6 @@
     <div class="stars"></div>
     <div class="ambient-light"></div>
     <div class="grid-texture"></div>
-    <div class="stars blinking-stars"></div>
-
-    <!-- 新增：鼠标跟随光晕 -->
-    <div id="cursor-glow"></div>
     <div class="left-panel">
       <div class="main-title">
         <h1>我的足迹地图</h1>
@@ -3230,16 +3190,7 @@
         ).size;
         document.getElementById('count-total').innerText = travelData.length;
       }
-
-      // --- 新增：背景光晕跟随鼠标逻辑 ---
-      document.addEventListener('mousemove', function (e) {
-        const cursorGlow = document.getElementById('cursor-glow');
-        if (cursorGlow) {
-          cursorGlow.style.left = e.clientX + 'px';
-          cursorGlow.style.top = e.clientY + 'px';
-        }
-      });
-
+      
       // 启动
       window.addEventListener('resize', () => myChart.resize());
       // 检测登录
@@ -3270,3 +3221,4 @@
     </script>
   </body>
 </html>
+
