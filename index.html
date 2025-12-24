@@ -2,15 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的足迹 - 在线版</title>
-    <!-- 引入 ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- 引入 jQuery -->
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <!-- 引入 Supabase SDK (核心) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* --- 1. 全局与背景 --- */
@@ -23,9 +19,7 @@
             color: #fff;
             font-family: "Microsoft YaHei", sans-serif;
             overflow: hidden;
-            /* 核心修复：锁死页面，禁止任何默认的页面级滚动 */
             position: fixed;
-            /* 禁止移动端浏览器的默认手势（如侧滑返回等，防止干扰地图） */
             touch-action: none;
         }
 
@@ -37,12 +31,11 @@
             height: 100%;
             z-index: 0;
             background: transparent;
-            /* 使用更清晰的单个圆点定义，调整了坐标分布 */
+            opacity: 0.5;
             background-image:
             /* 第一组：稍大的亮星 */
-            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), 
-                radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
+            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
             /* 第二组：微弱的小星 (增加层次感) */
             radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), 
                 radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), 
@@ -51,13 +44,11 @@
             background-repeat: repeat;
             background-size: 600px 600px; /* 保持大尺寸循环，避免密集重复 */
             animation: moveStars 150s linear infinite; /* 极慢速移动，更唯美 */
-            opacity: 0.9;
             pointer-events: none;
         }
 
         @keyframes moveStars {
             from {transform: translateY(0);}
-
             to {transform: translateY(-1000px);}
         }
 
@@ -132,13 +123,11 @@
             backdrop-filter: blur(5px);
             display: block;
         }
-
             .tag-manage-btn:hover {
                 background: #FFD700;
                 color: #000;
                 box-shadow: 0 0 15px #FFD700;
             }
-
         /* --- 3. 右上统计 --- */
         .stats-panel {
             position: static !important;
@@ -158,45 +147,31 @@
             padding: 10px 0;
             text-align: center;
         }
-
         .stat-num {
             font-size: 24px;
             color: #FFD700;
             font-weight: bold;
             display: block;
         }
-
         .stat-desc {
             font-size: 12px;
             color: #aaa;
         }
-
         /* --- 4. 侧边栏 --- */
         .sidebar-btn {
-            position: absolute;
-            top: 30px;
-            right: 20px;
             z-index: 100;
-            width: 40px;
-            height: 40px;
             background: rgba(0,223,255,0.1);
             border: 1px solid #00dfff;
-            border-radius: 50%;
             color: #00dfff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
             font-size: 20px;
             transition: 0.3s;
         }
-
             .sidebar-btn:hover {
                 background: #00dfff;
                 color: #000;
                 box-shadow: 0 0 15px #00dfff;
             }
-
         .sidebar {
             position: fixed;
             top: 0;
@@ -257,21 +232,13 @@
             margin-right: 8px;
             font-size: 14px;
             transition: 0.2s;
+            display: none; /* 核心修改：默认不显示 */   
         }
 
             .btn-edit-rec:hover {
                 color: #fff;
                 text-shadow: 0 0 5px #00dfff;
             }
-        /* --- 1. 修改原有的编辑图标样式：默认隐藏 --- */
-        .btn-edit-rec {
-            display: none; /* 核心修改：默认不显示 */
-            cursor: pointer;
-            color: #00dfff;
-            margin-right: 8px;
-            font-size: 14px;
-            transition: 0.2s;
-        }
 
         /* --- 2. 当侧边栏处于编辑模式时，显示图标 --- */
         .sidebar.edit-mode .btn-edit-rec {
@@ -281,19 +248,10 @@
 
         /* --- 3. 新增：全局编辑开关按钮样式 --- */
         .sidebar-edit-toggle {
-            position: absolute;
-            top: 30px; /* 位于侧边栏开关(30px)的下方 */
-            right: 85px;
             z-index: 100;
-            width: 40px;
-            height: 40px;
             background: rgba(0,223,255,0.1);
             border: 1px solid #00dfff;
-            border-radius: 50%;
             color: #00dfff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
             font-size: 18px;
             transition: 0.3s;
@@ -618,11 +576,6 @@
             background-size: 60px 60px;
             pointer-events: none;
         }
-        /* 确保原有的星星在网格之上 */
-        .stars {
-            z-index: 0;
-            opacity: 0.5;
-        }
 
         /* --- 2. 旅行日志卡片升级 --- */
         .record-item {
@@ -814,37 +767,24 @@
         .sum-run {
             color: #ffaa00;}/* 橙色-越野跑 */
         .region-record-btn {
-            position: absolute;
-            top: 30px;
-            right: 140px;
             z-index: 100;
-            width: 40px;
-            height: 40px;
             background: rgba(255, 165, 0, 0.15);
             border: 1px solid #FFD700;
-            border-radius: 50%;
             color: #FFD700;
-            display: none;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
             font-size: 18px;
             transition: 0.3s;
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
         }
-            .region-record-btn[style*="display: flex"],
-            .region-record-btn[style*="display:flex"] {
-                top: 30px !important;
-                right: 140px !important;
-            }
+
             .region-record-btn:hover {
                 background: #FFD700;
                 color: #000;
                 box-shadow: 0 0 20px #FFD700;
                 transform: scale(1.1);
             }
+
         .left-panel {
-            /* 原来是 10，改为 20，确保高于统计窗口 */
             z-index: 20 !important;
         }
         /* 主开关按钮 */
@@ -921,6 +861,38 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+        /* 1. 按钮组容器：统一管理位置和间距 */
+        .right-btn-group {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex; /* 弹性布局 */
+            align-items: center; /* 垂直居中 */
+            gap: 15px; /* 统一间距 15px */
+            pointer-events: none; /* 容器本身不挡鼠标 */
+        }
+
+        /* 2. 按钮通用重置：取消各自的绝对定位，改为相对容器排列 */
+        .sidebar-btn,
+        .sidebar-edit-toggle,
+        .region-record-btn {
+            /* 核心：强制重置定位属性 */
+            position: relative !important;
+            top: auto !important;
+            right: auto !important;
+            left: auto !important;
+            bottom: auto !important;
+            margin: 0 !important;
+            pointer-events: auto;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* 防止被压缩 */
         }
         /* --- 移动端适配 (Responsive Design) --- */
         @media screen and (max-width: 768px) {
@@ -1098,6 +1070,11 @@
                 padding: 8px 15px !important; /* 增大按钮点击区域，方便手指点击 */
                 font-size: 14px !important;
             }
+            .right-btn-group {
+                top: 15px !important;
+                right: 15px !important;
+                gap: 10px !important; /* 手机上间距稍微紧凑点 */
+            }
         }
     </style>
 </head>
@@ -1178,10 +1155,15 @@
         <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 0.6)"></div>深度游览 (2处)</div>
         <div class="legend-row"><div class="color-dot" style="background:rgba(255, 215, 0, 1.0); box-shadow:0 0 5px gold;"></div>完全探索 (3处+)</div>
     </div>
+    <div class="right-btn-group">
+        <div id="region-filter-btn" class="region-record-btn" title="查看当前区域记录" style="display:none;">📖</div>
 
-    <div class="sidebar-btn" onclick="toggleSidebar()">☰</div>
-    <div class="sidebar-edit-toggle" onclick="toggleEditMode()" title="开启/关闭编辑模式">✎</div>
-    <div id="region-filter-btn" class="region-record-btn" title="查看当前区域记录" style="display:none;">📖</div>
+        <div class="sidebar-edit-toggle" onclick="toggleEditMode()" title="编辑模式">✎</div>
+
+        <div class="sidebar-btn" onclick="toggleSidebar()">☰</div>
+
+    </div>
+
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header" style="padding: 20px 20px 0; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
         <div class="sidebar-content" id="log-container"></div>
@@ -2012,9 +1994,15 @@
                         } else if (t.includes('骑行')) {
                             bgUrl = 'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
                             borderColor = '#BDB76B'; //
-                        } else if (t.includes('音乐会')) {
+                        } else if (t.includes('回家')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1591345632854-ad34db5a1c92?q=80&w=400';
+                            borderColor = '#FF7F24'; //
+                        } else if (t.includes('演唱会')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1593573969589-c416b9c926de?q=80&w=400';
+                            borderColor = '#838B83'; //
+                        } else if (t.includes('音乐节')) {
                             bgUrl = 'https://images.unsplash.com/photo-1585230699768-a31a4d76e48f?q=80&w=400';
-                            borderColor = '#8B658B';
+                            borderColor = '#FF1493'; //
                         } else if (t.includes('博物馆')) {
                             bgUrl = 'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
                             borderColor = '#eebb44'; // 古典金/琥珀色
@@ -2027,6 +2015,7 @@
                     // --- 2. 构建内容 ---
                     let cn = CN_MAP[r.country] || r.country;
                     let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
+
                     let tagsHtml = '';
                     if (r.tags) r.tags.forEach(tag => tagsHtml += `<span class="rec-tag-badge">${tag}</span>`);
 
@@ -2072,9 +2061,12 @@
                                                 <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
                                                 <div class="rec-tags">${tagsHtml}</div>
                                             </div>
+
                                             ${statsHtml}
                                             ${noteHtml}
+
                                             </div>
+
                                     `;
                     list.appendChild(div);
                 });
@@ -2090,6 +2082,7 @@
                         if (sumBox) sumBox.style.display = 'none';
                     }
                 };
+
                 container.appendChild(header);
                 container.appendChild(summaryDiv);
                 container.appendChild(list);
@@ -2149,7 +2142,7 @@
             }
 
             myChart.showLoading();
-            $.getJSON(`./maps/100000_full.json`, function (geo) {
+            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap('china', geo);
 
@@ -2180,6 +2173,7 @@
                         // --- 修改：增加禁止下钻判断 ---
                         if (NO_DRILL_LIST.includes(params.name)) {
                             // 如果是直辖市或港澳，不进入下一级，直接当作点击事件处理（录入足迹）
+                            // 模拟点击坐标转换
                             let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
                             // 手动触发录入弹窗，省份和城市都填同一个名字
                             openDirectCityModal('China', params.name, coord);
@@ -2210,7 +2204,8 @@
         // --- 新增：数据导出 (下载 JSON) ---
         function exportData() {
             if (travelData.length === 0 && userTags.length === 0 && baseCities.length === 0) {
-                alert("暂无数据可备份");return;
+                alert("暂无数据可备份");
+                return;
             }
 
             // 打包所有数据
@@ -2249,12 +2244,14 @@
                     }
 
                     if (!confirm(`检测到备份文件：\n时间：${json.timestamp}\n记录数：${json.data.length}\n\n确定要覆盖当前所有数据吗？此操作不可撤销！`)) {
-                        inputElement.value = ''; return;
+                        inputElement.value = ''; // 清空选择
+                        return;
                     }
 
                     // 覆盖本地数据
                     travelData = json.data;
                     userTags = json.tags;
+                    // 兼容旧版本可能没有 bases 的情况
                     baseCities = json.bases || [];
 
                     // 写入 LocalStorage
@@ -2322,8 +2319,10 @@
             $.getJSON(`./maps/${adcode}_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap(pName, geo);
+
                 let regions = [];
                 let points = [];
+
                 geo.features.forEach(f => {
                     let city = f.properties.name;
 
@@ -2337,6 +2336,7 @@
                             shadowBlur: 10, shadowColor: '#FF8C00'
                         };
                     }
+
                     // 检查足迹记录 (逻辑：Base地背景优先，足迹点依然显示)
                     let recs = travelData.filter(r => r.country === 'China' && r.province === pName && r.city === city);
                     if (recs.length > 0) {
@@ -2359,6 +2359,7 @@
                 let opt = getCommonOption(pName, regions, series);
                 opt.geo.label.show = true; // 强制显示标签
                 myChart.setOption(opt, true);
+
                 setupClickEvent('China', pName);
             });
         }
@@ -2446,7 +2447,6 @@
         document.addEventListener('mousemove', function (e) {
             const cursorGlow = document.getElementById('cursor-glow');
             if (cursorGlow) {
-                // 使用 transform 移动，性能更好
                 cursorGlow.style.left = e.clientX + 'px';
                 cursorGlow.style.top = e.clientY + 'px';
             }
@@ -2472,7 +2472,6 @@
         const originalHeight = window.innerHeight;
         window.addEventListener('resize', () => {
             // 只有当高度变化超过 150px (通常是键盘弹出) 时才不重绘地图
-            // 或者简单地保持 myChart.resize() 也可以，ECharts 适配性通常不错
             if (Math.abs(window.innerHeight - originalHeight) < 100) {
                 myChart.resize();
             }
@@ -2480,4 +2479,3 @@
     </script>
 </body>
 </html>
-
