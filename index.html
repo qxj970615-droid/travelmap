@@ -2144,7 +2144,7 @@
             }
 
             myChart.showLoading();
-            $.getJSON(`./maps/100000_full.json`, function (geo) {
+            $.getJSON(`./maps_full/100000_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap('china', geo);
 
@@ -2318,7 +2318,7 @@
             }
 
             myChart.showLoading();
-            $.getJSON(`./maps/${adcode}_full.json`, function (geo) {
+            $.getJSON(`./maps_full/${adcode}_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap(pName, geo);
 
@@ -2481,4 +2481,5 @@
     </script>
 </body>
 </html>
+
 
