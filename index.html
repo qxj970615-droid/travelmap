@@ -1335,7 +1335,7 @@
             'Philippines': '菲律宾', 'Indonesia': '印度尼西亚', 'Malaysia': '马来西亚', 'Vietnam': '越南', 'Nepal': '尼泊尔',
             'Singapore': '新加坡', 'Cambodia': '柬埔寨', 'Laos': '老挝', 'Myanmar': '缅甸', 'Brazil': '巴西',
             'Argentina': '阿根廷', 'Mexico': '墨西哥', 'Egypt': '埃及', 'South Africa': '南非', 'Turkey': '土耳其',
-            'Netherlands': '荷兰', 'Switzerland': '瑞士', 'Sweden': '瑞典', 'Norway': '挪威', 'Finland': '芬兰',
+            'Netherlands': '荷兰', 'Switzerland': '瑞士', 'Sweden': '瑞典', 'Norway': '挪威', 'Finland': '芬兰','Iceland': '冰岛','Cambodia': '柬埔寨',
             'Denmark': '丹麦', 'New Zealand': '新西兰', 'United Arab Emirates': '阿联酋', 'Saudi Arabia': '沙特阿拉伯',
             'Portugal': '葡萄牙', 'Greece': '希腊', 'Austria': '奥地利', 'Hungary': '匈牙利', 'Czech Republic': '捷克',
             'Ethiopia': '埃塞俄比亚', 'United Republic of Tanzania': '坦桑尼亚', 'Kenya': '肯尼亚', 'Rwanda': '卢旺达', 'Oman': '阿曼', 'Jordan': '约旦', 'Iran': '伊朗',
@@ -1379,6 +1379,8 @@
             'Azerbaijan': 'https://code.highcharts.com/mapdata/countries/az/az-all.geo.json',
             'Georgia': 'https://code.highcharts.com/mapdata/countries/ge/ge-all.geo.json',
             'Maldives': 'https://code.highcharts.com/mapdata/countries/mv/mv-all.geo.json',
+            'Iceland': 'https://code.highcharts.com/mapdata/countries/is/is-all.geo.json',
+            'Cambodia': 'https://code.highcharts.com/mapdata/countries/kh/kh-all.geo.json',
             'Nepal': 'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json'
         };
         const CHINA_PROVINCES = {
@@ -1402,7 +1404,7 @@
             'Denmark': 'dk', 'New Zealand': 'nz', 'United Arab Emirates': 'ae',
             'Saudi Arabia': 'sa', 'Portugal': 'pt', 'Greece': 'gr', 'Austria': 'at',
             'Hungary': 'hu', 'Czech Republic': 'cz', 'Ethiopia': 'et',
-            'United Republic of Tanzania': 'tz', 'Kenya': 'ke',
+            'United Republic of Tanzania': 'tz', 'Kenya': 'ke','Iceland': 'is','Cambodia': 'kh',
             'Rwanda': 'rw', 'Oman': 'om', 'Jordan': 'jo', 'Iran': 'ir',
             'Kazakhstan': 'kz', 'Uzbekistan': 'uz', 'Maldives': 'mv',
             'Armenia': 'am', 'Azerbaijan': 'az', 'Georgia': 'ge'
@@ -2142,7 +2144,7 @@
             }
 
             myChart.showLoading();
-            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function (geo) {
+            $.getJSON(`./maps/100000_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap('china', geo);
 
@@ -2479,3 +2481,4 @@
     </script>
 </body>
 </html>
+
