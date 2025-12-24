@@ -1964,7 +1964,7 @@
             updateBackButton(true, "← 返回世界", renderWorld);
 
             myChart.showLoading();
-            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json`, function (geo) {
+            $.getJSON(`./maps/100000_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap('china', geo);
 
@@ -2114,7 +2114,7 @@
             updateBackButton(true, "← 返回中国", renderChina);
 
             myChart.showLoading();
-            $.getJSON(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`, function (geo) {
+            $.getJSON(`./maps/${adcode}_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap(pName, geo);
 
@@ -2264,4 +2264,5 @@
     </script>
 </body>
 </html>
+
 
