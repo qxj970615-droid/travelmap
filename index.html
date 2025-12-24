@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的足迹 - 在线版</title>
@@ -40,9 +39,14 @@
             /* 使用更清晰的单个圆点定义，调整了坐标分布 */
             background-image:
             /* 第一组：稍大的亮星 */
-            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
+            radial-gradient(2px 2px at 50px 100px, #ffffff, transparent), radial-gradient(2px 2px at 350px 50px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 550px 500px, #ffffff, transparent), radial-gradient(2px 2px at 150px 450px, #ffffff, transparent), 
+                radial-gradient(2px 2px at 400px 300px, #ffffff, transparent),
             /* 第二组：微弱的小星 (增加层次感) */
-            radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
+            radial-gradient(1px 1px at 200px 200px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 100px 550px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 500px 250px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 300px 500px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 450px 100px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 50px 350px, rgba(255,255,255,0.7), transparent), 
+                radial-gradient(1px 1px at 580px 50px, rgba(255,255,255,0.7), transparent), radial-gradient(1px 1px at 250px 50px, rgba(255,255,255,0.7), transparent);
             background-repeat: repeat;
             background-size: 600px 600px; /* 保持大尺寸循环，避免密集重复 */
             animation: moveStars 150s linear infinite; /* 极慢速移动，更唯美 */
@@ -51,13 +55,9 @@
         }
 
         @keyframes moveStars {
-            from {
-                transform: translateY(0);
-            }
+            from {transform: translateY(0);}
 
-            to {
-                transform: translateY(-1000px);
-            }
+            to {transform: translateY(-1000px);}
         }
 
         #map-container {
@@ -140,22 +140,22 @@
 
         /* --- 3. 右上统计 --- */
         .stats-panel {
-            position: absolute;
-            top: 30px;
-            right: 80px;
-            z-index: 10;
-            display: flex;
-            gap: 15px;
-            pointer-events: none;
+            position: static !important;
+            margin-top: 40px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 15px !important; /* 两个框之间的间距 */
+            pointer-events: auto; /* 允许鼠标交互 */
         }
 
         .stat-card {
+            width: 110px !important;
             background: rgba(20, 30, 50, 0.7);
-            border: 1px solid rgba(100, 200, 255, 0.3);
-            padding: 10px 20px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
             border-radius: 8px;
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
             text-align: center;
-            backdrop-filter: blur(5px);
         }
 
         .stat-num {
@@ -212,7 +212,13 @@
             padding-top: 80px;
             box-shadow: -5px 0 20px rgba(0,0,0,0.8);
         }
-
+        .sidebar-header {
+            padding: 0 20px 10px;
+            font-size: 16px;
+            color: #00dfff;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
             .sidebar.open {
                 transform: translateX(0);
             }
@@ -242,7 +248,6 @@
             display: flex;
             z-index: 3000;
         }
-        /* 初始显示登录框 */
 
         /* --- 新增：编辑按钮样式 --- */
         .btn-edit-rec {
@@ -276,8 +281,8 @@
         /* --- 3. 新增：全局编辑开关按钮样式 --- */
         .sidebar-edit-toggle {
             position: absolute;
-            top: 80px; /* 位于侧边栏开关(30px)的下方 */
-            right: 20px;
+            top: 30px; /* 位于侧边栏开关(30px)的下方 */
+            right: 85px;
             z-index: 100;
             width: 40px;
             height: 40px;
@@ -672,13 +677,8 @@
         }
 
         @keyframes blink {
-            0% {
-                opacity: 0.3;
-            }
-
-            100% {
-                opacity: 0.6;
-            }
+            0% {opacity: 0.3;}
+            100% {opacity: 0.6;}
         }
 
         /* 2. 鼠标跟随光晕 */
@@ -807,17 +807,120 @@
 
         /* 颜色定义 */
         .sum-hike {
-            color: #50c878;
-        }
-        /* 绿色-徒步 */
+            color: #50c878;}/* 绿色-徒步 */
         .sum-dive {
-            color: #00dfff;
-        }
-        /* 蓝青-潜水 */
+            color: #00dfff;}/* 蓝青-潜水 */
         .sum-run {
-            color: #ffaa00;
+            color: #ffaa00;}/* 橙色-越野跑 */
+        .region-record-btn {
+            position: absolute;
+            top: 30px;
+            right: 140px;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid #FFD700;
+            border-radius: 50%;
+            color: #FFD700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
         }
-        /* 橙色-越野跑 */
+            .region-record-btn[style*="display: flex"],
+            .region-record-btn[style*="display:flex"] {
+                top: 30px !important;
+                right: 140px !important;
+            }
+            .region-record-btn:hover {
+                background: #FFD700;
+                color: #000;
+                box-shadow: 0 0 20px #FFD700;
+                transform: scale(1.1);
+            }
+        .left-panel {
+            /* 原来是 10，改为 20，确保高于统计窗口 */
+            z-index: 20 !important;
+        }
+        /* 主开关按钮 */
+        .settings-toggle-btn {
+            width: 140px; /* 固定宽度，整齐 */
+            background: rgba(0, 223, 255, 0.1);
+            border: 1px solid #00dfff;
+            color: #00dfff;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+            .settings-toggle-btn:hover {
+                background: rgba(0, 223, 255, 0.25);
+                box-shadow: 0 0 15px rgba(0, 223, 255, 0.3);
+            }
+
+        /* 下拉菜单容器 */
+        .settings-dropdown {
+            display: none; /* 默认隐藏 */
+            flex-direction: column;
+            width: 140px;
+            background: rgba(15, 25, 40, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 5px;
+            margin-top: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            animation: slideDownMenu 0.2s ease-out;
+        }
+
+            /* 菜单内的按钮 */
+            .settings-dropdown button {
+                background: transparent;
+                border: none;
+                color: #ccc;
+                padding: 8px 10px;
+                text-align: left;
+                cursor: pointer;
+                font-size: 12px;
+                border-radius: 4px;
+                transition: 0.2s;
+            }
+
+                .settings-dropdown button:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    color: #fff;
+                }
+
+        /* 分割线 */
+        .menu-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+            margin: 4px 0;
+        }
+
+        /* 简单的下拉动画 */
+        @keyframes slideDownMenu {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
         /* --- 移动端适配 (Responsive Design) --- */
         @media screen and (max-width: 768px) {
             /* 1. 调整标题和左侧面板 */
@@ -884,11 +987,6 @@
                 right: 15px; /* 调整位置 */
             }
 
-            .region-record-btn {
-                top: 110px;
-                right: 15px;
-            }
-
             /* 4. 调整弹窗 (适配小屏幕) */
             .modal {
                 width: 85%; /* 宽度占85% */
@@ -910,6 +1008,28 @@
                 padding: 8px;
                 transform: scale(0.8); /* 整体缩小 */
                 transform-origin: bottom left;
+            }
+            /* --- 统计面板移动端适配 (仿照图例逻辑) --- */
+            .stats-panel {
+                transform: scale(0.8) !important;
+                transform-origin: top left;
+                margin-top: 20px !important;
+                gap: 12px !important;
+            }
+
+            /* 微调卡片内部，防止文字在手机上换行 */
+            .stat-card {
+                width: 130px !important; /* 允许宽度自适应，或者保持固定但稍微小点 */
+                padding: 8px 10px !important;
+                display: flex !important;
+                justify-content: space-between !important;
+            }
+
+            .stat-num {
+                font-size: 18px !important;
+            }
+            .stat-desc {
+                font-size: 10px !important;
             }
 
             /* 隐藏不必要的悬浮提示，手机上没有 hover */
@@ -1000,7 +1120,7 @@
                 <!-- 这里是悬浮显示的详细信息，直接在这里修改文字即可 -->
                 <div class="version-tooltip">
                     <h4>版本更新日志</h4>
-                    <p>发布时间: 2025-12-22</p>
+                    <p>发布时间: 2025-12-23</p>
                     <ul style="margin:0; padding-left:15px;">
                         <li>V3.7：新增在线登录功能</li>
                         <li>V3.6：新增部分运动记录功能，界面优化</li>
@@ -1021,33 +1141,35 @@
         </div>
         <div class="btn-group-left">
             <button id="nav-back-btn" class="nav-btn">← 返回</button>
-            <button class="tag-manage-btn" onclick="openTagManager()">🏷️ 管理标签</button>
-            <button class="tag-manage-btn" style="border-color: #FF8C00; color: #FF8C00;" onclick="openBaseManager()">🏠 管理Base地</button>
 
-            <!-- 新增：数据备份区 (修复了位置和点击问题) -->
-            <div style="margin-top: 15px; border-top: 1px dashed rgba(0, 223, 255, 0.3); padding-top: 10px; width: 100%; pointer-events: auto;">
-                <button class="nav-btn" style="display:inline-block;
-                        font-size:12px; padding:6px 15px; margin-right:5px; border-color:#aaa; color:#ccc;" onclick="exportData()" title="下载数据到本地">
-                    ⬇ 备份
-                </button>
-                <button class="nav-btn" style="display:inline-block;
-                        font-size:12px; padding:6px 15px; border-color:#aaa; color:#ccc;" onclick="document.getElementById('file-input').click()" title="从本地文件恢复">
-                    ⬆ 恢复
-                </button>
+            <button class="settings-toggle-btn" onclick="toggleSettingsMenu()">
+                <span>⚙️ 数据与设置</span>
+                <span id="settings-arrow" style="font-size:10px; transition:0.3s;">▼</span>
+            </button>
+
+            <!-- 3. 新增：折叠的菜单容器 -->
+            <div id="settings-dropdown" class="settings-dropdown">
+                <button onclick="openTagManager()">🏷️ 标签管理</button>
+                <button onclick="openBaseManager()" style="color:#FF8C00;">🏠 Base地管理</button>
+                <div class="menu-divider"></div>
+                <button onclick="exportData()">⬇ 备份数据</button>
+                <button onclick="document.getElementById('file-input').click()">⬆ 恢复数据</button>
+                <!-- 隐藏的文件输入框放在这里 -->
                 <input type="file" id="file-input" style="display: none;" onchange="importData(this)">
             </div>
-        </div>
-    </div>
 
-    <div class="stats-panel">
-        <div class="stat-card">
-            <span class="stat-num" id="count-country">0</span>
-            <span class="stat-desc">国家/地区</span>
         </div>
-        <div class="stat-card">
-            <span class="stat-num" id="count-total">0</span>
-            <span class="stat-desc">足迹总数</span>
+        <div class="stats-panel">
+            <div class="stat-card">
+                <span class="stat-num" id="count-country">0</span>
+                <span class="stat-desc">国家/地区</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="count-total">0</span>
+                <span class="stat-desc">足迹总数</span>
+            </div>
         </div>
+
     </div>
 
     <div class="legend-box">
@@ -1057,10 +1179,10 @@
     </div>
 
     <div class="sidebar-btn" onclick="toggleSidebar()">☰</div>
-    <!-- 新增：编辑模式开关 (放在下方) -->
     <div class="sidebar-edit-toggle" onclick="toggleEditMode()" title="开启/关闭编辑模式">✎</div>
+    <div id="region-filter-btn" class="region-record-btn" title="查看当前区域记录" style="display:none;">📖</div>
     <div class="sidebar" id="sidebar">
-        <div style="padding: 20px; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
+        <div class="sidebar-header" style="padding: 20px 20px 0; font-size:18px; color:#00dfff; font-weight:bold;">旅行日志</div>
         <div class="sidebar-content" id="log-container"></div>
     </div>
 
@@ -1220,7 +1342,7 @@
 
         // 新增：禁止下钻的区域列表 (直辖市 + 港澳)
         const NO_DRILL_LIST = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
-
+        const SPECIAL_CITIES = ['北京市', '天津市', '上海市', '重庆市', '香港特别行政区', '澳门特别行政区'];
 
         // 字典与配置 (保持原样)
         const CN_MAP = {
@@ -1705,21 +1827,67 @@
         }
 
         // --- 侧边栏 (年份统计与标签显示) ---
-        function updateLogSidebar() {
+        function updateLogSidebar(filterObj = null) {
             const container = document.getElementById('log-container');
             container.innerHTML = '';
 
-            // 索引映射
-            let indexedData = travelData.map((item, index) => ({ ...item, originalIndex: index }));
+            let filteredData = travelData.map((item, index) => ({ ...item, originalIndex: index }));
+            let isSpecialMode = false; // 是否为直辖市分组模式
+
+            // --- 1. 筛选逻辑 ---
+            if (filterObj) {
+                if (filterObj.specialChina) {
+                    // 模式：中国地图下的特殊区域展示
+                    isSpecialMode = true;
+                    filteredData = filteredData.filter(r => r.country === 'China' && SPECIAL_CITIES.includes(r.province));
+                    document.querySelector('#sidebar .sidebar-header').innerHTML = `直辖市/特区 <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
+                } else {
+                    // 普通模式：按国家或省份筛选
+                    filteredData = filteredData.filter(r =>
+                        filterObj.province ? (r.country === filterObj.country && r.province === filterObj.province) : r.country === filterObj.country
+                    );
+                    let title = filterObj.province ? filterObj.province : (CN_MAP[filterObj.country] || filterObj.country);
+                    document.querySelector('#sidebar .sidebar-header').innerHTML = `${title} <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
+                }
+            } else {
+                document.querySelector('#sidebar .sidebar-header').innerHTML = '旅行日志';
+            }
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div style="color:#888; text-align:center; margin-top:20px;">暂无相关记录</div>';
+                return;
+            }
+
+            // --- 2. 分组逻辑 (年份 vs 城市名) ---
             let groups = {};
-            indexedData.forEach(r => {
-                let y = r.date.substring(0, 4) || '未知';
-                if (!groups[y]) groups[y] = [];
-                groups[y].push(r);
+            filteredData.forEach(r => {
+                let key;
+                if (isSpecialMode) {
+                    // 特殊模式：按省份/城市名分组 (如 "北京市")
+                    key = r.province;
+                } else {
+                    // 普通模式：按年份分组
+                    key = r.date.substring(0, 4) || '未知';
+                }
+
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(r);
             });
 
-            Object.keys(groups).sort((a, b) => b - a).forEach(year => {
-                let recs = groups[year].sort((a, b) => new Date(b.date) - new Date(a.date));
+            // --- 3. 排序与渲染 ---
+            // 如果是特殊模式，按记录数量排序；否则按年份倒序
+            let keys = Object.keys(groups);
+            if (isSpecialMode) {
+                // 按记录数多少排序
+                keys.sort((a, b) => groups[b].length - groups[a].length);
+            } else {
+                // 按年份倒序
+                keys.sort((a, b) => b - a);
+            }
+
+            keys.forEach(groupKey => {
+                // 组内记录按日期倒序
+                let recs = groups[groupKey].sort((a, b) => new Date(b.date) - new Date(a.date));
                 let totalDays = recs.reduce((sum, r) => sum + (parseInt(r.days) || 1), 0);
 
                 // --- A. 计算年度运动统计 ---
@@ -1741,8 +1909,6 @@
 
                     // 潜水统计 (累计气瓶数)
                     if (tStr.includes('潜水')) {
-                        // 这里假设每次记录是一次潜水旅行，累加输入的 input-dives
-                        // 如果只是一次记录算一次，就用 count++，这里采用累加气瓶数逻辑
                         stats.dive.count += parseFloat(r.dives) || 0;
                     }
 
@@ -1759,24 +1925,24 @@
 
                 if (stats.hike.count > 0) {
                     statsContent += `
-                                    <div class="summary-row sum-hike">
-                                        <span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span>
-                                        <span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span>
-                                    </div>`;
+                                        <div class="summary-row sum-hike">
+                                            <span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span>
+                                            <span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span>
+                                        </div>`;
                 }
                 if (stats.run.count > 0) {
                     statsContent += `
-                                    <div class="summary-row sum-run">
-                                        <span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span>
-                                        <span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span>
-                                    </div>`;
+                                        <div class="summary-row sum-run">
+                                            <span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span>
+                                            <span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span>
+                                        </div>`;
                 }
                 if (stats.dive.count > 0) {
                     statsContent += `
-                                    <div class="summary-row sum-dive">
-                                        <span class="sum-title">🤿 潜水</span>
-                                        <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
-                                    </div>`;
+                                        <div class="summary-row sum-dive">
+                                            <span class="sum-title">🤿 潜水</span>
+                                            <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
+                                        </div>`;
                 }
 
                 // 只有当有运动数据时，才包裹外框
@@ -1788,17 +1954,18 @@
                 // 年份标题
                 let header = document.createElement('div');
                 header.className = 'year-header';
-                header.innerHTML = `<span>${year}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
+                header.innerHTML = `<span>${groupKey}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
 
                 // 2. 统计面板容器 (新建)
                 let summaryDiv = document.createElement('div');
                 summaryDiv.innerHTML = summaryBoxHtml;
-                // 注意：summaryDiv 本身是个 wrapper，我们需要控制内部 .year-summary-box 的显示
 
                 // 列表容器
                 let list = document.createElement('div');
                 list.className = 'record-list';
-                list.style.display = 'none'; // 默认折叠
+                list.style.display = filterObj ? 'block' : 'none';
+
+                if (filterObj && statsContent) setTimeout(() => { if (summaryDiv.firstChild) summaryDiv.firstChild.style.display = 'block'; }, 0);
 
                 recs.forEach(r => {
                     let div = document.createElement('div');
@@ -1844,6 +2011,9 @@
                         } else if (t.includes('骑行')) {
                             bgUrl = 'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
                             borderColor = '#BDB76B'; //
+                        } else if (t.includes('音乐会')) {
+                            bgUrl = 'https://images.unsplash.com/photo-1585230699768-a31a4d76e48f?q=80&w=400';
+                            borderColor = '#8B658B';
                         } else if (t.includes('博物馆')) {
                             bgUrl = 'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
                             borderColor = '#eebb44'; // 古典金/琥珀色
@@ -1856,7 +2026,6 @@
                     // --- 2. 构建内容 ---
                     let cn = CN_MAP[r.country] || r.country;
                     let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
-
                     let tagsHtml = '';
                     if (r.tags) r.tags.forEach(tag => tagsHtml += `<span class="rec-tag-badge">${tag}</span>`);
 
@@ -1883,32 +2052,29 @@
                     let noteHtml = '';
                     if (r.note && r.note.trim() !== '') {
                         noteHtml = `
-                                        <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
-                                            ${r.note}
-                                        </div>
-                                    `;
+                                            <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
+                                                ${r.note}
+                                            </div>
+                                        `;
                     }
 
                     div.innerHTML = `
-                                    ${bgDiv}
-                                    <div class="rec-content">
-                                        <div class="rec-top">
-                                            <div style="display:flex; align-items:center;">
-                                                ${flagImg} <span>${place}</span>
-                                            </div><span class="rec-days">${r.days || 1}天</span>
-                                            <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
-                                        </div>
-                                         <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                                            <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
-                                            <div class="rec-tags">${tagsHtml}</div>
-                                        </div>
-
-                                        ${statsHtml}
-                                        ${noteHtml}
-
-                                        </div>
-
-                                `;
+                                        ${bgDiv}
+                                        <div class="rec-content">
+                                            <div class="rec-top">
+                                                <div style="display:flex; align-items:center;">
+                                                    ${flagImg} <span>${place}</span>
+                                                </div><span class="rec-days">${r.days || 1}天</span>
+                                                <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+                                            </div>
+                                             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                                                <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                                                <div class="rec-tags">${tagsHtml}</div>
+                                            </div>
+                                            ${statsHtml}
+                                            ${noteHtml}
+                                            </div>
+                                    `;
                     list.appendChild(div);
                 });
 
@@ -1923,7 +2089,6 @@
                         if (sumBox) sumBox.style.display = 'none';
                     }
                 };
-
                 container.appendChild(header);
                 container.appendChild(summaryDiv);
                 container.appendChild(list);
@@ -1935,6 +2100,11 @@
         function renderWorld() {
             currentLevel = 'world';
             updateBackButton(false);
+
+            // --- 确保隐藏 ---
+            document.getElementById('region-filter-btn').style.display = 'none';
+            updateLogSidebar(null); // 重置侧边栏
+
             myChart.showLoading({ text: '加载高精地图...', color: '#00dfff', maskColor: 'rgba(0,0,0,0.5)' });
             $.getJSON(MAP_URLS.world, function (geo) {
                 myChart.hideLoading();
@@ -1963,6 +2133,20 @@
             currentScopeName = 'China';
             updateBackButton(true, "← 返回世界", renderWorld);
 
+            // --- 新增：显示按钮并绑定特殊分组逻辑 ---
+            const filterBtn = document.getElementById('region-filter-btn');
+            if (filterBtn) {
+                filterBtn.style.display = 'flex'; // 显示按钮
+                // 重新绑定点击事件
+                filterBtn.onclick = function () {
+                    // 1. 调用筛选 (只显示直辖市/港澳)
+                    updateLogSidebar({ specialChina: true });
+                    // 2. 强制打开侧边栏
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar) sidebar.classList.add('open');
+                };
+            }
+
             myChart.showLoading();
             $.getJSON(`./maps/100000_full.json`, function (geo) {
                 myChart.hideLoading();
@@ -1971,17 +2155,19 @@
                 let regions = [];
                 geo.features.forEach(f => {
                     let pName = f.properties.name;
+                    let relevantRecs = travelData.filter(r => r.country === 'China' && r.province === pName);
+                    let count = 0;
 
-                    // 1. 计算热力图颜色
-                    let count = new Set(travelData.filter(r => r.country === 'China' && r.province === pName).map(r => r.city)).size;
-                    let color = getHeatColor(count); // 获取原来的黄色/深黄色
-
-                    // 2. Base地优先着色逻辑 (橙色)
-                    // 如果这个省/直辖市的名字在 Base列表中 (例如 '上海市')，强制覆盖为橙色
-                    if (baseCities.includes(pName)) {
-                        color = '#FF8C00'; // 橙色
+                    // 判断是否为直辖市或特别行政区 (使用之前定义的 SPECIAL_CITIES 列表)
+                    if (typeof SPECIAL_CITIES !== 'undefined' && SPECIAL_CITIES.includes(pName)) {
+                        // 如果是直辖市：统计总记录数 (去过3次 = 3)
+                        count = relevantRecs.length;
+                    } else {
+                        // 如果是普通省份：统计去过的不同城市数量 (去过成都、绵阳 = 2)
+                        count = new Set(relevantRecs.map(r => r.city)).size;
                     }
-
+                    let color = getHeatColor(count);
+                    if (baseCities.includes(pName)) color = '#FF8C00';
                     if (color) regions.push({ name: pName, itemStyle: { areaColor: color } });
                 });
 
@@ -1993,7 +2179,6 @@
                         // --- 修改：增加禁止下钻判断 ---
                         if (NO_DRILL_LIST.includes(params.name)) {
                             // 如果是直辖市或港澳，不进入下一级，直接当作点击事件处理（录入足迹）
-                            // 模拟点击坐标转换
                             let coord = myChart.convertFromPixel('geo', [params.event.offsetX, params.event.offsetY]);
                             // 手动触发录入弹窗，省份和城市都填同一个名字
                             openDirectCityModal('China', params.name, coord);
@@ -2006,12 +2191,25 @@
                 });
             });
         }
+        // --- 新增：切换设置菜单显示状态 ---
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('settings-dropdown');
+            const arrow = document.getElementById('settings-arrow');
 
+            if (menu.style.display === 'flex') {
+                // 关闭
+                menu.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                // 打开
+                menu.style.display = 'flex';
+                arrow.style.transform = 'rotate(180deg)'; // 箭头旋转
+            }
+        }
         // --- 新增：数据导出 (下载 JSON) ---
         function exportData() {
             if (travelData.length === 0 && userTags.length === 0 && baseCities.length === 0) {
-                alert("暂无数据可备份");
-                return;
+                alert("暂无数据可备份");return;
             }
 
             // 打包所有数据
@@ -2050,24 +2248,20 @@
                     }
 
                     if (!confirm(`检测到备份文件：\n时间：${json.timestamp}\n记录数：${json.data.length}\n\n确定要覆盖当前所有数据吗？此操作不可撤销！`)) {
-                        inputElement.value = ''; // 清空选择
-                        return;
+                        inputElement.value = ''; return;
                     }
 
                     // 覆盖本地数据
                     travelData = json.data;
                     userTags = json.tags;
-                    // 兼容旧版本可能没有 bases 的情况
                     baseCities = json.bases || [];
 
                     // 写入 LocalStorage
                     localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
                     localStorage.setItem(TAGS_KEY, JSON.stringify(userTags));
                     localStorage.setItem('travel_map_bases_list', JSON.stringify(baseCities)); // 注意这里要用你代码里定义的 BASE_KEY
-
                     alert("数据恢复成功！页面将刷新。");
                     location.reload(); // 刷新页面以重新加载数据
-
                 } catch (err) {
                     alert("导入失败：文件损坏或格式错误。\n" + err.message);
                 }
@@ -2112,20 +2306,27 @@
             currentLevel = 'province';
             currentScopeName = pName;
             updateBackButton(true, "← 返回中国", renderChina);
+            // --- 新增：显示按钮 ---
+            const filterBtn = document.getElementById('region-filter-btn');
+            if (filterBtn) {
+                filterBtn.style.display = 'flex';
+                filterBtn.onclick = function () {
+                    updateLogSidebar({ country: 'China', province: pName });
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar) sidebar.classList.add('open');
+                };
+            }
 
             myChart.showLoading();
             $.getJSON(`./maps/${adcode}_full.json`, function (geo) {
                 myChart.hideLoading();
                 echarts.registerMap(pName, geo);
-
                 let regions = [];
                 let points = [];
-
                 geo.features.forEach(f => {
                     let city = f.properties.name;
 
                     // Base地着色逻辑 ---
-                    // 默认样式
                     let itemStyle = null;
 
                     // 如果是 Base 地，底色设为橙色
@@ -2135,7 +2336,6 @@
                             shadowBlur: 10, shadowColor: '#FF8C00'
                         };
                     }
-
                     // 检查足迹记录 (逻辑：Base地背景优先，足迹点依然显示)
                     let recs = travelData.filter(r => r.country === 'China' && r.province === pName && r.city === city);
                     if (recs.length > 0) {
@@ -2145,7 +2345,6 @@
                         }
                         recs.forEach(r => points.push({ name: r.city, value: [r.lng, r.lat], custom: r }));
                     }
-
                     if (itemStyle) {
                         regions.push({ name: city, itemStyle: itemStyle });
                     }
@@ -2159,7 +2358,6 @@
                 let opt = getCommonOption(pName, regions, series);
                 opt.geo.label.show = true; // 强制显示标签
                 myChart.setOption(opt, true);
-
                 setupClickEvent('China', pName);
             });
         }
@@ -2168,6 +2366,18 @@
             currentLevel = 'foreign';
             currentScopeName = cName;
             updateBackButton(true, "← 返回世界", renderWorld);
+            // --- 新增：显示按钮 ---
+            const filterBtn = document.getElementById('region-filter-btn');
+            if (filterBtn) {
+                filterBtn.style.display = 'flex';
+                filterBtn.onclick = function () {
+                    // 1. 筛选当前国家
+                    updateLogSidebar({ country: cName });
+                    // 2. 强制打开侧边栏
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar) sidebar.classList.add('open');
+                };
+            }
             myChart.showLoading();
             $.getJSON(MAP_URLS[cName], function (geo) {
                 myChart.hideLoading();
@@ -2211,6 +2421,10 @@
         }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
+        function resetSidebar() {
+            updateLogSidebar(null); // 传入 null 表示不过滤
+        }
+
         // --- 新增：切换编辑模式 ---
         function toggleEditMode() {
             const sidebar = document.getElementById('sidebar');
@@ -2241,14 +2455,15 @@
         window.addEventListener('resize', () => myChart.resize());
         // 检测登录
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                currentUser = session.user;
-                initCloudData();
+            if (typeof supabase !== 'undefined' && supabase.auth) {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    // 这里是您的登录逻辑，保持原样即可
+                    if (typeof updateAuthUI === 'function') updateAuthUI(session);
+                }).catch(err => {
+                    console.warn("数据库连接检查跳过或失败:", err);
+                });
             } else {
-                // 未登录先渲染离线数据
-                renderWorld(); updateLogSidebar(); updateStats();
-                // 延时弹出登录，避免视觉突兀
-                setTimeout(() => document.getElementById('login-mask').style.display = 'flex', 500);
+                console.log("Supabase 尚未初始化，跳过在线检查，保持本地模式运行。");
             }
         });
         // --- 移动端键盘适配 ---
@@ -2264,5 +2479,3 @@
     </script>
 </body>
 </html>
-
-
