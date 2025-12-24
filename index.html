@@ -946,6 +946,25 @@
         justify-content: center;
         flex-shrink: 0; /* 防止被压缩 */
       }
+       .security-tip {
+        background: rgba(255, 68, 68, 0.1); /* 淡红色背景 */
+        border: 1px solid rgba(255, 68, 68, 0.4); /* 红色边框 */
+        color: #ff6666; /* 亮红色文字 */
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        margin-bottom: 15px; /* 与下方输入框保持距离 */
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .security-tip i {
+        font-style: normal;
+        font-weight: bold;
+    }
       /* --- 移动端适配 (Responsive Design) --- */
       @media screen and (max-width: 768px) {
         /* 1. 调整标题和左侧面板 */
@@ -1368,10 +1387,14 @@
             注册
           </button>
         </div>
+        <div class="security-tip">
+                <i>⚠️</i> 提示：网站安全性较低，请勿使用重要密码
+            </div>
         <p
           id="login-msg"
           style="color: #ff4444; font-size: 12px; margin-top: 10px"
         ></p>
+        
         <div
           style="
             margin-top: 15px;
@@ -3221,4 +3244,5 @@
     </script>
   </body>
 </html>
+
 
