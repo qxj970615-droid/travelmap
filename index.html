@@ -1395,7 +1395,7 @@
 <div
           style="margin-top: 10px;">
         <div class="security-tip">
-            <i>Tips：：邮箱中的注册链接打开会报错，不必理会，点击后即可注册成功；离线模式有bug，仅用于调试；境外地图只加载了部分，有需要联系管理员添加。
+            <i>Tips：邮箱中的注册链接打开会报错，不必理会，点击后即可注册成功；境外地图只加载了部分，有需要联系管理员添加。
 </div>
         <p
           id="login-msg"
@@ -1412,7 +1412,7 @@
           <span
             style="font-size: 12px; color: #888; cursor: pointer"
             onclick="useOfflineMode()"
-            >暂不登录，使用离线模式 &gt;</span
+            >调试模式 &gt;</span
           >
         </div>
       </div>
@@ -2434,353 +2434,242 @@
       }
 
       // --- 侧边栏 (年份统计与标签显示) ---
-      function updateLogSidebar(filterObj = null) {
-        const container = document.getElementById('log-container');
-        container.innerHTML = '';
+        function updateLogSidebar(filterObj = null) {
+            const container = document.getElementById('log-container');
+            container.innerHTML = '';
 
-        let filteredData = travelData.map((item, index) => ({
-          ...item,
-          originalIndex: index,
-        }));
-        let isSpecialMode = false; // 是否为直辖市分组模式
+            let filteredData = travelData.map((item, index) => ({ ...item, originalIndex: index }));
 
-        // --- 1. 筛选逻辑 ---
-        if (filterObj) {
-          if (filterObj.specialChina) {
-            // 模式：中国地图下的特殊区域展示
-            isSpecialMode = true;
-            filteredData = filteredData.filter(
-              (r) =>
-                r.country === 'China' && SPECIAL_CITIES.includes(r.province),
-            );
-            document.querySelector(
-              '#sidebar .sidebar-header',
-            ).innerHTML = `直辖市/特区 <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
-          } else {
-            // 普通模式：按国家或省份筛选
-            filteredData = filteredData.filter((r) =>
-              filterObj.province
-                ? r.country === filterObj.country &&
-                  r.province === filterObj.province
-                : r.country === filterObj.country,
-            );
-            let title = filterObj.province
-              ? filterObj.province
-              : CN_MAP[filterObj.country] || filterObj.country;
-            document.querySelector(
-              '#sidebar .sidebar-header',
-            ).innerHTML = `${title} <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
-          }
-        } else {
-          document.querySelector('#sidebar .sidebar-header').innerHTML =
-            '旅行日志';
-        }
-
-        if (filteredData.length === 0) {
-          container.innerHTML =
-            '<div style="color:#888; text-align:center; margin-top:20px;">暂无相关记录</div>';
-          return;
-        }
-
-        // --- 2. 分组逻辑 (年份 vs 城市名) ---
-        let groups = {};
-        filteredData.forEach((r) => {
-          let key;
-          if (isSpecialMode) {
-            // 特殊模式：按省份/城市名分组 (如 "北京市")
-            key = r.province;
-          } else {
-            // 普通模式：按年份分组
-            key = r.date.substring(0, 4) || '未知';
-          }
-
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(r);
-        });
-
-        // --- 3. 排序与渲染 ---
-        // 如果是特殊模式，按记录数量排序；否则按年份倒序
-        let keys = Object.keys(groups);
-        if (isSpecialMode) {
-          // 按记录数多少排序
-          keys.sort((a, b) => groups[b].length - groups[a].length);
-        } else {
-          // 按年份倒序
-          keys.sort((a, b) => b - a);
-        }
-
-        keys.forEach((groupKey) => {
-          // 组内记录按日期倒序
-          let recs = groups[groupKey].sort(
-            (a, b) => new Date(b.date) - new Date(a.date),
-          );
-          let totalDays = recs.reduce(
-            (sum, r) => sum + (parseInt(r.days) || 1),
-            0,
-          );
-
-          // --- A. 计算年度运动统计 ---
-          let stats = {
-            hike: { count: 0, dist: 0, climb: 0 },
-            dive: { count: 0 }, // 潜水通常统计气瓶数(dives)或次数
-            run: { count: 0, dist: 0, climb: 0 },
-          };
-
-          recs.forEach((r) => {
-            const tStr = (r.tags || []).join(',');
-
-            // 徒步统计
-            if (tStr.includes('徒步')) {
-              stats.hike.count++;
-              stats.hike.dist += parseFloat(r.distance) || 0;
-              stats.hike.climb += parseFloat(r.climb) || 0;
-            }
-
-            // 潜水统计 (累计气瓶数)
-            if (tStr.includes('潜水')) {
-              stats.dive.count += parseFloat(r.dives) || 0;
-            }
-
-            // 越野跑统计 (含训练)
-            if (tStr.includes('越野跑')) {
-              stats.run.count++;
-              stats.run.dist += parseFloat(r.distance) || 0;
-              stats.run.climb += parseFloat(r.climb) || 0;
-            }
-          });
-
-          // 构建统计 HTML (仅当有数据时显示对应行)
-          let statsContent = '';
-
-          if (stats.hike.count > 0) {
-            statsContent += `
-                                        <div class="summary-row sum-hike">
-                                            <span class="sum-title">🚶 徒步 (${
-                                              stats.hike.count
-                                            }次)</span>
-                                            <span class="sum-data">${stats.hike.dist.toFixed(
-                                              1,
-                                            )}km / ${stats.hike.climb}m</span>
-                                        </div>`;
-          }
-          if (stats.run.count > 0) {
-            statsContent += `
-                                        <div class="summary-row sum-run">
-                                            <span class="sum-title">🏃 越野跑 (${
-                                              stats.run.count
-                                            }次)</span>
-                                            <span class="sum-data">${stats.run.dist.toFixed(
-                                              1,
-                                            )}km / ${stats.run.climb}m</span>
-                                        </div>`;
-          }
-          if (stats.dive.count > 0) {
-            statsContent += `
-                                        <div class="summary-row sum-dive">
-                                            <span class="sum-title">🤿 潜水</span>
-                                            <span class="sum-data">累计 ${stats.dive.count} 瓶</span>
-                                        </div>`;
-          }
-
-          // 只有当有运动数据时，才包裹外框
-          let summaryBoxHtml = '';
-          if (statsContent) {
-            summaryBoxHtml = `<div class="year-summary-box">${statsContent}</div>`;
-          }
-
-          // 年份标题
-          let header = document.createElement('div');
-          header.className = 'year-header';
-          header.innerHTML = `<span>${groupKey}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
-
-          // 2. 统计面板容器 (新建)
-          let summaryDiv = document.createElement('div');
-          summaryDiv.innerHTML = summaryBoxHtml;
-
-          // 列表容器
-          let list = document.createElement('div');
-          list.className = 'record-list';
-          list.style.display = filterObj ? 'block' : 'none';
-
-          if (filterObj && statsContent)
-            setTimeout(() => {
-              if (summaryDiv.firstChild)
-                summaryDiv.firstChild.style.display = 'block';
-            }, 0);
-
-          recs.forEach((r) => {
-            let div = document.createElement('div');
-            div.className = 'record-item';
-
-            // --- 1. 背景图与边框颜色匹配逻辑 ---
-            let bgUrl = '';
-            let borderColor = ''; // 默认边框
-
-            if (r.tags && r.tags.length > 0) {
-              const t = r.tags.join(',');
-
-              if (t.includes('越野跑')) {
-                // 包含"越野跑"或"越野跑训练"
-                bgUrl =
-                  'https://images.unsplash.com/photo-1504025468847-0e438279542c?q=80&w=400';
-                borderColor = '#ffaa00'; // 橙色
-              } else if (t.includes('滑雪')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1511880200544-0170efd77eff?q=80&w=400';
-                borderColor = '#00dfff'; // 冰蓝
-              } else if (t.includes('潜水')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400';
-                borderColor = '#0055ff'; // 深蓝
-              } else if (t.includes('观星')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400';
-                borderColor = '#9933ff'; // 紫色
-              } else if (t.includes('徒步')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400';
-                borderColor = '#50c878'; // 绿色
-              } else if (t.includes('摄影')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400';
-                borderColor = '#ccc'; // 银灰
-              } else if (t.includes('自驾')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400';
-                borderColor = '#FFD700'; // 金黄
-              } else if (t.includes('美食')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400';
-                borderColor = '#ff4444'; // 红色
-              } else if (t.includes('中转')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
-                borderColor = '#708090'; // 石板灰
-              } else if (t.includes('纯玩')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
-                borderColor = '#FFE4E1'; // 薄雾玫瑰
-              } else if (t.includes('骑行')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
-                borderColor = '#BDB76B'; //
-              } else if (t.includes('回家')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1591345632854-ad34db5a1c92?q=80&w=400';
-                borderColor = '#FF7F24'; //
-              } else if (t.includes('演唱会')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1593573969589-c416b9c926de?q=80&w=400';
-                borderColor = '#838B83'; //
-              } else if (t.includes('音乐节')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1585230699768-a31a4d76e48f?q=80&w=400';
-                borderColor = '#FF1493'; //
-              } else if (t.includes('博物馆')) {
-                bgUrl =
-                  'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
-                borderColor = '#eebb44'; // 古典金/琥珀色
-              }
-            }
-
-            // 应用边框色
-            if (borderColor) div.style.borderLeftColor = borderColor;
-
-            // --- 2. 构建内容 ---
-            let cn = CN_MAP[r.country] || r.country;
-            let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
-
-            let tagsHtml = '';
-            if (r.tags)
-              r.tags.forEach(
-                (tag) =>
-                  (tagsHtml += `<span class="rec-tag-badge">${tag}</span>`),
-              );
-
-            // 国旗
-            let iso =
-              typeof COUNTRY_ISO !== 'undefined' && COUNTRY_ISO[r.country]
-                ? COUNTRY_ISO[r.country].toLowerCase()
-                : null;
-            let flagImg = iso
-              ? `<img src="https://flagcdn.com/w40/${iso}.png" class="flag-icon">`
-              : '';
-
-            // 背景图 HTML
-            let bgDiv = bgUrl
-              ? `<div class="rec-bg-img" style="background-image: url('${bgUrl}');"></div>`
-              : '';
-
-            // --- 新增：构建数据展示 HTML ---
-            let statsHtml = '';
-            if (r.distance || r.climb || r.dives || r.skiDist) {
-              let parts = [];
-              if (r.distance) parts.push(`📏 ${r.distance}km`);
-              if (r.climb) parts.push(`⛰️ ${r.climb}m`);
-              if (r.dives) parts.push(`🤿 ${r.dives}瓶`);
-              if (r.skiDist) parts.push(`⛷️ ${r.skiDist}km`);
-              // 用金色字体显示
-              statsHtml = `<div style="margin-top:4px; font-size:11px; color:#FFD700;">${parts.join(
-                ' &nbsp;|&nbsp; ',
-              )}</div>`;
-            }
-
-            // --- 新增：备注显示逻辑 ---
-            let noteHtml = '';
-            if (r.note && r.note.trim() !== '') {
-              noteHtml = `
-                                            <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">
-                                                ${r.note}
-                                            </div>
-                                        `;
-            }
-
-            div.innerHTML = `
-                                        ${bgDiv}
-                                        <div class="rec-content">
-                                            <div class="rec-top">
-                                                <div style="display:flex; align-items:center;">
-                                                    ${flagImg} <span>${place}</span>
-                                                </div><span class="rec-days">${
-                                                  r.days || 1
-                                                }天</span>
-                                                <span class="btn-edit-rec" onclick="editRecord(${
-                                                  r.originalIndex
-                                                })">✎</span>
-                                            </div>
-                                             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                                                <span class="rec-date" style="margin-bottom:0;">${
-                                                  r.date
-                                                }</span>
-                                                <div class="rec-tags">${tagsHtml}</div>
-                                            </div>
-
-                                            ${statsHtml}
-                                            ${noteHtml}
-
-                                            </div>
-
-                                    `;
-            list.appendChild(div);
-          });
-
-          // --- C. 点击折叠事件 (同时控制列表和统计框) ---
-          header.onclick = function () {
-            const sumBox = summaryDiv.querySelector('.year-summary-box');
-            if (list.style.display === 'none') {
-              list.style.display = 'block';
-              if (sumBox) sumBox.style.display = 'block';
+            // 1. 筛选逻辑
+            if (filterObj) {
+                if (filterObj.specialChina) {
+                    filteredData = filteredData.filter(r => r.country === 'China' && typeof SPECIAL_CITIES !== 'undefined' && SPECIAL_CITIES.includes(r.province));
+                    document.querySelector('#sidebar .sidebar-header').innerHTML = `直辖市/特区 <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
+                } else {
+                    filteredData = filteredData.filter(r =>
+                        filterObj.province ? (r.country === filterObj.country && r.province === filterObj.province) : r.country === filterObj.country
+                    );
+                    let title = filterObj.province ? filterObj.province : (CN_MAP[filterObj.country] || filterObj.country);
+                    document.querySelector('#sidebar .sidebar-header').innerHTML = `${title} <span style="font-size:12px;cursor:pointer;color:#aaa;" onclick="resetSidebar()">[显示全部]</span>`;
+                }
             } else {
-              list.style.display = 'none';
-              if (sumBox) sumBox.style.display = 'none';
+                document.querySelector('#sidebar .sidebar-header').innerHTML = '旅行日志';
             }
-          };
 
-          container.appendChild(header);
-          container.appendChild(summaryDiv);
-          container.appendChild(list);
-        });
-      }
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div style="color:#888; text-align:center; margin-top:20px;">暂无相关记录</div>';
+                return;
+            }
+
+            // 2. 分组逻辑
+            let groups = {};
+            filteredData.forEach(r => {
+                let key = (filterObj && filterObj.specialChina) ? r.province : (r.date.substring(0, 4) || '未知');
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(r);
+            });
+
+            // 3. 排序
+            let keys = Object.keys(groups);
+            if (filterObj && filterObj.specialChina) keys.sort((a, b) => groups[b].length - groups[a].length);
+            else keys.sort((a, b) => b - a);
+
+            keys.forEach(groupKey => {
+                let recs = groups[groupKey].sort((a, b) => new Date(b.date) - new Date(a.date));
+                let totalDays = recs.reduce((sum, r) => sum + (parseInt(r.days) || 1), 0);
+
+                // --- A. 核心统计逻辑 (更新) ---
+                let stats = { hike: { count: 0, dist: 0, climb: 0 }, dive: { count: 0 }, run: { count: 0, dist: 0, climb: 0 } };
+
+                // 新增：去重统计 Set
+                let uniqueCountries = new Set();
+                let uniqueCities = new Set();
+
+                recs.forEach(r => {
+                    // 1. 运动统计
+                    const tStr = (r.tags || []).join(',');
+                    if (tStr.includes('徒步')) { stats.hike.count++; stats.hike.dist += parseFloat(r.distance) || 0; stats.hike.climb += parseFloat(r.climb) || 0; }
+                    if (tStr.includes('潜水')) { stats.dive.count += parseFloat(r.dives) || 0; }
+                    if (tStr.includes('越野跑')) { stats.run.count++; stats.run.dist += parseFloat(r.distance) || 0; stats.run.climb += parseFloat(r.climb) || 0; }
+
+                    // 2. 国家统计 (排除中国)
+                    if (r.country !== 'China' && r.country !== '中国') {
+                        uniqueCountries.add(r.country);
+                    }
+
+                    // 3. 城市统计 (排除 Base 地)
+                    // 优先取城市名，如果没有则取省份名(针对国外记录可能没填城市)
+                    let cityCheck = r.city || r.province;
+                    if (cityCheck && !baseCities.includes(cityCheck)) {
+                        uniqueCities.add(cityCheck);
+                    }
+                });
+
+                // --- 构建统计 HTML ---
+                let statsContent = '';
+
+                // 新增：旅行足迹行 (如果有数据才显示)
+                if (uniqueCountries.size > 0 || uniqueCities.size > 0) {
+                    let countryText = uniqueCountries.size > 0 ? `${uniqueCountries.size}个国家` : '';
+                    let cityText = uniqueCities.size > 0 ? `${uniqueCities.size}个城市` : '';
+                    let slash = (countryText && cityText) ? ' / ' : '';
+
+                    statsContent += `
+                    <div class="summary-row sum-travel">
+                        <span class="sum-title">🌍 足迹</span>
+                        <span class="sum-data">${countryText}${slash}${cityText}</span>
+                    </div>`;
+                }
+
+                // 原有运动统计
+                if (stats.hike.count > 0) statsContent += `<div class="summary-row sum-hike"><span class="sum-title">🚶 徒步 (${stats.hike.count}次)</span><span class="sum-data">${stats.hike.dist.toFixed(1)}km / ${stats.hike.climb}m</span></div>`;
+                if (stats.run.count > 0) statsContent += `<div class="summary-row sum-run"><span class="sum-title">🏃 越野跑 (${stats.run.count}次)</span><span class="sum-data">${stats.run.dist.toFixed(1)}km / ${stats.run.climb}m</span></div>`;
+                if (stats.dive.count > 0) statsContent += `<div class="summary-row sum-dive"><span class="sum-title">🤿 潜水</span><span class="sum-data">累计 ${stats.dive.count} 瓶</span></div>`;
+
+                let summaryDiv = document.createElement('div');
+                // 只要有内容就显示外框
+                if (statsContent) summaryDiv.innerHTML = `<div class="year-summary-box">${statsContent}</div>`;
+
+                // --- B. 创建标题与列表 ---
+                let header = document.createElement('div');
+                header.className = 'year-header';
+                header.innerHTML = `<span>${groupKey}</span> <span class="year-stats">${recs.length} 次 / ${totalDays} 天</span>`;
+
+                let list = document.createElement('div');
+                list.className = 'record-list';
+                list.style.display = filterObj ? 'block' : 'none';
+
+                // 如果是筛选模式，自动展开统计框
+                if (filterObj && statsContent) setTimeout(() => { if (summaryDiv.firstChild) summaryDiv.firstChild.style.display = 'block'; }, 0);
+
+                recs.forEach(r => {
+                    let div = document.createElement('div');
+                    div.className = 'record-item';
+
+                    let bgUrl = ''; let borderColor = '';
+                    if (r.tags && r.tags.length > 0) {
+                        const t = r.tags.join(',');
+                        if (t.includes('越野跑')) {
+                            // 包含"越野跑"或"越野跑训练"
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1504025468847-0e438279542c?q=80&w=400';
+                            borderColor = '#ffaa00'; // 橙色
+                        } else if (t.includes('滑雪')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1511880200544-0170efd77eff?q=80&w=400';
+                            borderColor = '#00dfff'; // 冰蓝
+                        } else if (t.includes('潜水')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400';
+                            borderColor = '#0055ff'; // 深蓝
+                        } else if (t.includes('观星')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=400';
+                            borderColor = '#9933ff'; // 紫色
+                        } else if (t.includes('徒步')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1551632811-561732d1e306?q=80&w=400';
+                            borderColor = '#50c878'; // 绿色
+                        } else if (t.includes('摄影')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400';
+                            borderColor = '#ccc'; // 银灰
+                        } else if (t.includes('自驾')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=400';
+                            borderColor = '#FFD700'; // 金黄
+                        } else if (t.includes('美食')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=400';
+                            borderColor = '#ff4444'; // 红色
+                        } else if (t.includes('中转')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
+                            borderColor = '#708090'; // 石板灰
+                        } else if (t.includes('纯玩')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
+                            borderColor = '#FFE4E1'; // 薄雾玫瑰
+                        } else if (t.includes('骑行')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1696832610884-69ba2bb887cb?q=80&w=400';
+                            borderColor = '#BDB76B'; //
+                        } else if (t.includes('回家')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1591345632854-ad34db5a1c92?q=80&w=400';
+                            borderColor = '#FF7F24'; //
+                        } else if (t.includes('演唱会')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1593573969589-c416b9c926de?q=80&w=400';
+                            borderColor = '#838B83'; //
+                        } else if (t.includes('音乐节')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1585230699768-a31a4d76e48f?q=80&w=400';
+                            borderColor = '#FF1493'; //
+                        } else if (t.includes('博物馆')) {
+                            bgUrl =
+                                'https://images.unsplash.com/photo-1614819752722-a1abb5b9a3cc?q=80&w=400';
+                            borderColor = '#eebb44'; // 古典金/琥珀色
+                        }
+                    }
+                    if (borderColor) div.style.borderLeftColor = borderColor;
+
+                    let statsHtml = '';
+                    let parts = [];
+                    if (r.distance) parts.push(`📏 ${r.distance}km`);
+                    if (r.climb) parts.push(`⛰️ ${r.climb}m`);
+                    if (r.dives) parts.push(`🤿 ${r.dives}瓶`);
+                    if (r.skiDist) parts.push(`⛷️ ${r.skiDist}km`);
+                    if (parts.length > 0) statsHtml = `<div style="margin-top:4px; font-size:11px; color:#FFD700; text-shadow: 0 1px 2px black;">${parts.join(' &nbsp;|&nbsp; ')}</div>`;
+
+                    let noteHtml = '';
+                    if (r.note && r.note.trim() !== '') noteHtml = `<div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.15); font-size:12px; color:#aab; font-style:italic; line-height:1.4;">${r.note}</div>`;
+
+                    let cn = CN_MAP[r.country] || r.country;
+                    let place = cn + (r.city ? ` · ${r.city}` : ` · ${r.province}`);
+                    let tagsHtml = ''; if (r.tags) r.tags.forEach(t => tagsHtml += `<span class="rec-tag-badge">${t}</span>`);
+                    let iso = COUNTRY_ISO[r.country] ? COUNTRY_ISO[r.country].toLowerCase() : null;
+                    let flagImg = iso ? `<img src="https://flagcdn.com/w40/${iso}.png" class="flag-icon">` : '';
+
+                    let finalBg = r.bgImg ? `background-image: url('${r.bgImg}'); opacity: 0.8; filter: grayscale(0%);` : (bgUrl ? `background-image: url('${bgUrl}');` : '');
+                    let bgDiv = finalBg ? `<div class="rec-bg-img" style="${finalBg}"></div>` : '';
+
+                    div.innerHTML = `
+                    ${bgDiv}
+                    <div class="rec-content">
+                        <div class="rec-top">
+                            <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
+                            <span class="rec-days">${r.days || 1}天</span>
+                            <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+                        </div>
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                            <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                            <div class="rec-tags">${tagsHtml}</div>
+                        </div>
+                        ${statsHtml}
+                        ${noteHtml}
+                    </div>
+                   
+                `;
+                    list.appendChild(div);
+                });
+
+                header.onclick = function () {
+                    const sumBox = summaryDiv.querySelector('.year-summary-box');
+                    if (list.style.display === 'none') {
+                        list.style.display = 'block';
+                        if (sumBox) sumBox.style.display = 'block';
+                    } else {
+                        list.style.display = 'none';
+                        if (sumBox) sumBox.style.display = 'none';
+                    }
+                };
+
+                container.appendChild(header);
+                container.appendChild(summaryDiv);
+                container.appendChild(list);
+            });
+        }
 
       // --- 地图渲染函数 ---
 
