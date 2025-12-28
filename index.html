@@ -123,7 +123,7 @@
         position: absolute;
         top: 30px;
         left: 30px;
-        z-index: 10;
+        z-index: 20;
         pointer-events: none;
       }
 
@@ -836,9 +836,6 @@
         transform: scale(1.1);
       }
 
-      .left-panel {
-        z-index: 20 !important;
-      }
       /* 主开关按钮 */
       .settings-toggle-btn {
         width: 140px; /* 固定宽度，整齐 */
@@ -925,7 +922,9 @@
         gap: 15px; /* 统一间距 15px */
         pointer-events: none; /* 容器本身不挡鼠标 */
       }
-
+        .right-btn-group.moved-down {
+            top: 100px !important;
+        }
       /* 2. 按钮通用重置：取消各自的绝对定位，改为相对容器排列 */
       .sidebar-btn,
       .sidebar-edit-toggle,
@@ -946,6 +945,56 @@
         justify-content: center;
         flex-shrink: 0; /* 防止被压缩 */
       }
+
+        .friend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+            .friend-item:hover {
+                background: rgba(0, 255, 170, 0.1);
+                border-color: rgba(0, 255, 170, 0.5);
+            }
+
+        .friend-email {
+            font-weight: bold;
+            color: #fff;
+            display: block;
+        }
+
+        .friend-stats {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+
+        .btn-del-friend {
+            color: #ff4444;
+            font-size: 12px;
+            padding: 2px 5px;
+            margin-left: 10px;
+        }
+
+        .btn-del-friend:hover {
+                text-decoration: underline;
+        }
+        #friend-name-display {
+            color: #00ffaa;
+            font-weight: bold;
+            border-bottom: 1px dashed rgba(0, 255, 170, 0.5);
+            padding-bottom: 2px;
+        }
+        body.friend-mode .right-btn-group {
+            top: 70px !important; /* 原来是30px，下移50px避开提示条 */
+        }
       /* --- 移动端适配 (Responsive Design) --- */
       @media screen and (max-width: 768px) {
         /* 1. 调整标题和左侧面板 */
@@ -1132,6 +1181,56 @@
           right: 15px !important;
           gap: 10px !important; /* 手机上间距稍微紧凑点 */
         }
+        body.friend-mode .right-btn-group {
+            top: 65px !important;
+        }
+        #friend-view-bar {
+            /* 调整高度和内边距 */
+            height: 50px !important;
+            padding: 0 15px !important;
+            /* 改为两端对齐：左边文字，右边按钮 */
+            justify-content: space-between !important;
+            /* 增加底部阴影，区分内容 */
+            box-shadow: 0 2px 10px rgba(0, 255, 170, 0.15);
+            background: rgba(10, 20, 35, 0.95) !important; /*以此遮挡地图文字*/
+        }
+
+            /* 限制文字区域宽度，防止邮箱过长撑开屏幕 */
+            #friend-view-bar > span {
+                display: flex;
+                align-items: center;
+                font-size: 13px;
+                max-width: 65%; /* 留出空间给按钮 */
+                white-space: nowrap;
+                overflow: hidden; /* 超出隐藏 */
+            }
+
+        /* 邮箱过长显示省略号 */
+        #friend-name-display {
+            display: inline-block;
+            max-width: 100px; /* 限制名字最大宽度 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
+            margin-left: 5px;
+        }
+
+        /* 优化退出按钮：更大更易点 */
+        #friend-view-bar button {
+            padding: 6px 15px !important;
+            font-size: 12px !important;
+            border-radius: 20px !important; /* 圆角胶囊样式 */
+            background: rgba(0, 255, 170, 0.2) !important;
+            color: #00ffaa !important;
+            border: 1px solid #00ffaa !important;
+            transition: 0.2s;
+        }
+
+            #friend-view-bar button:active {
+                background: #00ffaa !important;
+                color: #000 !important;
+            }
       }
     </style>
   </head>
@@ -1140,6 +1239,10 @@
       <div class="stars"></div>
       <div class="ambient-light"></div>
       <div class="grid-texture"></div>
+      <div id="friend-view-bar" style="display:none; position:fixed; top:0; left:0; width:100%; height:40px; background:rgba(0, 255, 170, 0.2); z-index:9999; backdrop-filter:blur(5px); border-bottom:1px solid #00ffaa; align-items:center; justify-content:center; color:#fff;">
+          <span style="margin-right:15px; font-weight:bold;">👀 正在查看好友：<span id="friend-name-display" style="color:#00ffaa;"></span></span>
+          <button onclick="exitFriendMode()" style="background:#00ffaa; border:none; border-radius:4px; padding:2px 10px; cursor:pointer; font-weight:bold; color:#000;">退出查看</button>
+      </div>
       <div class="left-panel">
           <div class="main-title">
               <h1>我的足迹地图</h1>
@@ -1147,17 +1250,15 @@
                   <div class="version-badge">V3.7</div>
 
                   <!-- 版本号设置 -->
-                  <!-- 这里是悬浮显示的详细信息，直接在这里修改文字即可 -->
                   <div class="version-tooltip">
                       <h4>版本更新日志</h4>
-                      <p>发布时间: 2025-12-23</p>
+                      <p>发布时间: 2025-12-28</p>
                       <ul style="margin: 0; padding-left: 15px">
+                          <li>V3.8：新增好友功能</li>
                           <li>V3.7：新增在线登录功能</li>
                           <li>V3.6：新增部分运动记录功能，界面优化</li>
                           <li>V3.5：新增备份功能</li>
                           <li>V3.4：新增删除记录功能，新增base地设置</li>
-                          <li>V3.3：新增十三个国家地图</li>
-                          <li>V3.2：新增软件版本变更日志，新增记录修改功能</li>
                       </ul>
                   </div>
               </div>
@@ -1182,7 +1283,7 @@
                       class="nav-btn">
                   ← 返回
               </button>
-
+              <button class="nav-btn" style="display:inline-block; border-color:#00ffaa; color:#00ffaa;" onclick="openFriendList()">👥 我的好友</button>
               <button class="settings-toggle-btn"
                       onclick="toggleSettingsMenu()">
                   <span>⚙️ 数据与设置</span>
@@ -1198,8 +1299,9 @@
                           style="color: #ff8c00">
                       🏠 Base地管理
                   </button>
+                  <button onclick="togglePrivacy()" id="privacy-btn">🔒 隐私: 公开</button>
                   <div class="menu-divider"></div>
-                  <button onclick="exportData()">⬇ 备份数据（仅限电脑端）</button>
+                  <button onclick="exportData()">⬇ 备份数据（仅电脑端）</button>
                   <button onclick="document.getElementById('file-input').click()">
                       ⬆ 恢复数据
                   </button>
@@ -1504,6 +1606,30 @@
           </div>
       </div>
 
+      <!-- 好友列表面板 (复用侧边栏样式，但在左侧或作为弹窗) -->
+      <div id="friend-panel" class="modal-mask">
+          <div class="modal" style="height: 60vh; display: flex; flex-direction: column;">
+              <h3 style="margin-top:0; color:#00ffaa; border-bottom:1px solid #334; padding-bottom:10px; display:flex; justify-content:space-between;">
+                  我的好友（需退回个人界面再关闭网页）
+                  <span style="font-size:12px; cursor:pointer; color:#aaa;" onclick="closeFriendPanel()">关闭</span>
+              </h3>
+
+              <!-- 好友列表容器 -->
+              <div id="friend-list-container" style="flex:1; overflow-y:auto; margin-bottom:15px;">
+                  <!-- JS 生成 -->
+                  <div style="color:#888; text-align:center; margin-top:20px;">加载中...</div>
+              </div>
+
+              <!-- 添加好友区域 -->
+              <div style="border-top:1px dashed #334; padding-top:15px;">
+                  <div class="tag-input-group">
+                      <input type="text" id="add-friend-input" placeholder="输入好友邮箱">
+                      <button class="btn-ok" onclick="addFriend()" style="background:#00ffaa; color:#000;">添加</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
       <script>
           const SUPABASE_URL = 'https://kyslslgfyzunyxpcxody.supabase.co';
           const SUPABASE_KEY = 'sb_publishable_NNtPZSWmyqZiewuAqnjpvA_TEsm9p52';
@@ -1685,6 +1811,7 @@
                   'https://code.highcharts.com/mapdata/countries/kz/kz-all.geo.json',
               Uzbekistan:
                   'https://code.highcharts.com/mapdata/countries/uz/uz-all.geo.json',
+              'Finland': 'https://code.highcharts.com/mapdata/countries/fi/fi-all.geo.json',
               Armenia:
                   'https://code.highcharts.com/mapdata/countries/am/am-all.geo.json',
               Azerbaijan:
@@ -1859,7 +1986,12 @@
                   travelData = data.travel_data || [];
                   userTags = data.tags || userTags;
                   baseCities = data.bases || [];
-                  localStorage.setItem(DATA_KEY, JSON.stringify(travelData)); // 同步到本地
+                  // 新增：读取隐私设置
+                  if (data.privacy) {
+                      privacySettings = data.privacy;
+                      updatePrivacyBtnUI();
+                  }
+                  localStorage.setItem(DATA_KEY, JSON.stringify(travelData));
               } else {
                   saveToCloud(); // 新用户同步本地到云端
               }
@@ -1868,14 +2000,21 @@
               renderWorld();
           }
 
+          let privacySettings = { show_tracks: true }; // 默认公开
+
           async function saveToCloud() {
               if (!currentUser) return;
+
+              // 获取当前隐私设置
               const { error } = await supabaseClient.from('user_profiles').upsert({
                   id: currentUser.id,
+                  email: currentUser.email, // 同步邮箱，方便好友搜索
                   travel_data: travelData,
                   tags: userTags,
                   bases: baseCities,
+                  privacy: privacySettings // 同步隐私设置
               });
+
               if (error) console.error('云端同步失败:', error);
               else console.log('云端同步成功');
           }
@@ -2373,10 +2512,10 @@
                       let slash = (countryText && cityText) ? ' / ' : '';
 
                       statsContent += `
-                                        <div class="summary-row sum-travel">
-                                            <span class="sum-title">🌍 足迹</span>
-                                            <span class="sum-data">${countryText}${slash}${cityText}</span>
-                                        </div>`;
+                                                    <div class="summary-row sum-travel">
+                                                        <span class="sum-title">🌍 足迹</span>
+                                                        <span class="sum-data">${countryText}${slash}${cityText}</span>
+                                                    </div>`;
                   }
 
                   // 原有运动统计
@@ -2492,21 +2631,21 @@
                       let bgDiv = finalBg ? `<div class="rec-bg-img" style="${finalBg}"></div>` : '';
 
                       div.innerHTML = `
-                                        ${bgDiv}
-                                        <div class="rec-content">
-                                            <div class="rec-top">
-                                                <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
-                                                <span class="rec-days">${r.days || 1}天</span>
-                                                <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
-                                            </div>
-                                            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
-                                                <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
-                                                <div class="rec-tags">${tagsHtml}</div>
-                                            </div>
-                                            ${statsHtml}
-                                            ${noteHtml}
-                                        </div>
-                                    `;
+                                                    ${bgDiv}
+                                                    <div class="rec-content">
+                                                        <div class="rec-top">
+                                                            <div style="display:flex; align-items:center;">${flagImg} <span>${place}</span></div>
+                                                            <span class="rec-days">${r.days || 1}天</span>
+                                                            <span class="btn-edit-rec" onclick="editRecord(${r.originalIndex})">✎</span>
+                                                        </div>
+                                                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:5px;">
+                                                            <span class="rec-date" style="margin-bottom:0;">${r.date}</span>
+                                                            <div class="rec-tags">${tagsHtml}</div>
+                                                        </div>
+                                                        ${statsHtml}
+                                                        ${noteHtml}
+                                                    </div>
+                                                `;
                       list.appendChild(div);
                   });
 
@@ -2964,6 +3103,206 @@
                   travelData.map((r) => r.country),
               ).size;
               document.getElementById('count-total').innerText = travelData.length;
+          }
+
+          // --- 好友系统逻辑 ---
+
+          // 打开好友面板
+          async function openFriendList() {
+              if (!currentUser) return alert("请先登录才能使用好友功能");
+              document.getElementById('friend-panel').style.display = 'flex';
+              loadFriends();
+          }
+
+          function closeFriendPanel() {
+              document.getElementById('friend-panel').style.display = 'none';
+          }
+
+          // 加载好友列表
+          async function loadFriends() {
+              const container = document.getElementById('friend-list-container');
+              container.innerHTML = '<div style="text-align:center;color:#aaa;">加载中...</div>';
+
+              // 1. 获取好友关系
+              const { data: friendships, error } = await supabaseClient
+                  .from('friendships')
+                  .select('friend_id')
+                  .eq('user_id', currentUser.id);
+
+              if (error || !friendships) {
+                  container.innerHTML = '<div style="text-align:center;color:#ff4444;">加载失败</div>';
+                  return;
+              }
+
+              if (friendships.length === 0) {
+                  container.innerHTML = '<div style="text-align:center;color:#aaa;">暂无好友，输入邮箱添加</div>';
+                  return;
+              }
+
+              // 2. 获取好友详细信息
+              const friendIds = friendships.map(f => f.friend_id);
+              const { data: friends, error: profileErr } = await supabaseClient
+                  .from('user_profiles')
+                  .select('id, email, travel_data')
+                  .in('id', friendIds);
+
+              if (profileErr) return;
+
+              // 3. 渲染列表
+              container.innerHTML = '';
+              friends.forEach(f => {
+                  const data = f.travel_data || [];
+                  const countries = new Set(data.map(r => r.country)).size;
+                  const records = data.length;
+
+                  const div = document.createElement('div');
+                  div.className = 'friend-item';
+                  div.innerHTML = `
+                <div onclick="viewFriendData('${f.id}', '${f.email}')" style="flex:1;">
+                    <span class="friend-email">${f.email}</span>
+                    <div class="friend-stats">🌍 ${countries} 国家 · 📍 ${records} 足迹</div>
+                </div>
+                <div class="btn-del-friend" onclick="removeFriend('${f.id}')">删除</div>
+            `;
+                  container.appendChild(div);
+              });
+          }
+
+          // 添加好友
+          async function addFriend() {
+              const email = document.getElementById('add-friend-input').value.trim();
+              if (!email) return;
+
+              // 1. 根据邮箱查找用户 ID
+              const { data: users, error } = await supabaseClient
+                  .from('user_profiles')
+                  .select('id')
+                  .eq('email', email)
+                  .single();
+
+              if (error || !users) {
+                  alert("未找到该用户，请确认邮箱是否正确并已注册");
+                  return;
+              }
+
+              if (users.id === currentUser.id) return alert("不能添加自己");
+
+              // 2. 建立关系
+              const { error: addErr } = await supabaseClient
+                  .from('friendships')
+                  .insert({ user_id: currentUser.id, friend_id: users.id });
+
+              if (addErr) {
+                  if (addErr.code === '23505') alert("已经是好友了"); // Unique violation
+                  else alert("添加失败: " + addErr.message);
+              } else {
+                  alert("添加成功！");
+                  document.getElementById('add-friend-input').value = '';
+                  loadFriends();
+              }
+          }
+
+          // 删除好友
+          async function removeFriend(friendId) {
+              if (!confirm("确定删除该好友吗？")) return;
+              await supabaseClient.from('friendships').delete().match({ user_id: currentUser.id, friend_id: friendId });
+              loadFriends();
+          }
+
+          // --- 查看好友模式 (View Mode) ---
+
+          // 全局变量备份，用于退出时恢复
+          let myTravelData = [];
+          let myBaseCities = [];
+          let isViewMode = false;
+
+          async function viewFriendData(friendId, friendEmail) {
+              // 1. 获取好友完整数据
+              const { data, error } = await supabaseClient
+                  .from('user_profiles')
+                  .select('*')
+                  .eq('id', friendId)
+                  .single();
+
+              if (error || !data) return alert("无法获取好友数据");
+
+              // 2. 备份我的数据
+              if (!isViewMode) {
+                  myTravelData = JSON.parse(JSON.stringify(travelData));
+                  myBaseCities = JSON.parse(JSON.stringify(baseCities));
+              }
+
+              // 3. 切换数据源
+              isViewMode = true;
+              travelData = data.travel_data || [];
+              baseCities = data.bases || [];
+
+              // 4. 处理隐私设置 (隐藏详细轨迹)
+              const friendPrivacy = data.privacy || { show_tracks: true };
+              if (!friendPrivacy.show_tracks) {
+                  // 如果对方隐藏了轨迹，我们清空备注和详细数据，只保留坐标用于画点
+                  travelData = travelData.map(r => ({
+                      ...r,
+                      note: '***', date: '****', days: 0,
+                      // 保留 lng/lat 用于地图点亮，但侧边栏可以隐藏细节
+                  }));
+                  alert("对方设置了隐藏详细轨迹，仅显示地图点位和统计。");
+              }
+
+              // 5. 更新 UI
+              document.getElementById('friend-view-bar').style.display = 'flex';
+              document.getElementById('friend-name-display').innerText = friendEmail;
+              document.body.classList.add('friend-mode');
+              closeFriendPanel();
+
+              // 隐藏编辑入口 (看好友时不能编辑)
+              document.querySelector('.sidebar-edit-toggle').style.display = 'none';
+              document.querySelector('.region-record-btn').style.display = 'none'; // 也不允许录入
+
+              // 刷新视图
+              renderWorld();
+
+              // 根据隐私决定是否显示侧边栏详情
+              if (friendPrivacy.show_tracks) {
+                  updateLogSidebar();
+              } else {
+                  document.getElementById('log-container').innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;">🔒 对方隐藏了详细记录</div>';
+              }
+              updateStats();
+          }
+
+          function exitFriendMode() {
+              // 恢复数据
+              travelData = myTravelData;
+              baseCities = myBaseCities;
+              isViewMode = false;
+
+              // 恢复 UI
+              document.getElementById('friend-view-bar').style.display = 'none';
+              document.body.classList.remove('friend-mode');
+              document.querySelector('.sidebar-edit-toggle').style.display = 'flex';
+
+              renderWorld();
+              updateLogSidebar();
+              updateStats();
+          }
+
+          // --- 隐私设置逻辑 ---
+          function togglePrivacy() {
+              privacySettings.show_tracks = !privacySettings.show_tracks;
+              updatePrivacyBtnUI();
+              saveToCloud(); // 立即保存
+          }
+
+          function updatePrivacyBtnUI() {
+              const btn = document.getElementById('privacy-btn');
+              if (privacySettings.show_tracks) {
+                  btn.innerHTML = '🔓 隐私: 公开轨迹';
+                  btn.style.color = '#ccc';
+              } else {
+                  btn.innerHTML = '🔒 隐私: 隐藏详情';
+                  btn.style.color = '#ff4444';
+              }
           }
 
           // 启动
