@@ -1656,7 +1656,7 @@
               '徒步',
               '滑雪',
               '自驾',
-              '潜水',
+              '潜水','户外','宗教','城市',
               '摄影',
               '美食',
               '博物馆',
@@ -1744,6 +1744,7 @@
               Armenia: '亚美尼亚',
               Azerbaijan: '阿塞拜疆',
               Georgia: '格鲁吉亚',
+            'United Arab Emirates': '阿联酋',
               Maldives: '马尔代夫',
           };
           const MAP_URLS = {
@@ -1824,6 +1825,8 @@
                   'https://code.highcharts.com/mapdata/countries/is/is-all.geo.json',
               Cambodia:
                   'https://code.highcharts.com/mapdata/countries/kh/kh-all.geo.json',
+            'United Arab Emirates': 
+                  'https://code.highcharts.com/mapdata/countries/ae/ae-all.geo.json',
               Nepal:
                   'https://code.highcharts.com/mapdata/countries/np/np-all.geo.json',
           };
@@ -1897,6 +1900,7 @@
               Turkey: 'tr',
               Netherlands: 'nl',
               Switzerland: 'ch',
+            'United Arab Emirates': 'ae',
               Sweden: 'se',
               Norway: 'no',
               Finland: 'fi',
@@ -2583,7 +2587,16 @@
                               bgUrl =
                                   'https://images.unsplash.com/photo-1545488286-6fe608f23485?q=80&w=400';
                               borderColor = '#708090'; // 石板灰
-                          } else if (t.includes('纯玩')) {
+                           } else if (t.includes('户外')) {
+                              bgUrl =
+                                  './photo/mountain.jpg';
+                              borderColor = '#698B22'; // 
+ } else if (t.includes('宗教')) {
+                              bgUrl =
+                                  'https://images.unsplash.com/photo-1606298855672-3efb63017be8?q=80&w=400';
+                              borderColor = '#B8860B'; // 
+
+                          } else if (t.includes('城市')) {
                               bgUrl =
                                   'https://images.unsplash.com/photo-1618933198854-ee406476827c?q=80&w=400';
                               borderColor = '#FFE4E1'; // 薄雾玫瑰
